@@ -1,0 +1,27 @@
+{
+  "name": "@fanfic/scanner",
+  "version": "1.0.0",
+  "description": "A not-ready-for-publication fanfic update scanner.",
+  "bin": "run-scanner.js",
+  "main": "scanner.js",
+  "dependencies": {
+    "@iarna/cli": "^2.0.2",
+    "@iarna/pg": "^1.0.2",
+    "@iarna/toml": "^2.2.3",
+    "@perl/qr": "^1.2.0",
+    "@perl/qw": "^1.0.1",
+    "cheerio": "^1.0.0-rc.3",
+    "funstream": "^4.2.0",
+    "handlebars": "^4.1.2",
+    "http-proxy-agent": "^2.1.0",
+    "koa": "^2.7.0",
+    "koa-logger": "^3.2.0",
+    "moment": "^2.24.0",
+    "node-fetch": "^2.6.0",
+    "yargs": "^13.2.4"
+  },
+  "devDependencies": {},
+  "keywords": [],
+  "author": "Rebecca Turner <me@re-becca.org> (http://re-becca.org/)",
+  "license": "ISC"
+}
