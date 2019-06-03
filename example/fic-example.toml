@@ -1,0 +1,13 @@
+schedule = 7200 # default will be every 2 hours
+tags = [ "fandom:Girl Interrupted" ]
+
+[[source]]
+name = "ao3"
+link = "https://archiveofourown.org/tags/Girl%20Interrupted%20(1999)/works"
+engine = "ao3"
+schedule 3600 # every hour
+
+[[source]]
+name = "ffnet"
+link = "https://www.fanfiction.net/book/Girl-Interrupted/?srt=1&r=10"
+engine = "ffnet"

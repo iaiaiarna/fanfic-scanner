@@ -1,0 +1,7 @@
+port = 10800
+requestlog = false
+fic-proxy = 'http://localhost:10700'
+dbfile = 'postgresql://user:password@hostname/dbname'
+sources = [
+  'example/fic-example.toml'
+]
