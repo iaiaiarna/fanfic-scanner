@@ -85,7 +85,7 @@ class ScannerDB extends EventEmitter {
         return await txn.value(sql`
           INSERT
           INTO source (name, tags) 
-
+          VALUES (${source.name}, ${tags})
           RETURNING sourceid`)
       }
     })
