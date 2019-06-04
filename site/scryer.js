@@ -63,6 +63,7 @@ async function parseScan (scanLink, html, pageId) {
     const info = ffp(footer)
     const {rating, words, reviews, favs, follows, chapterCount, status} = info
     fic.summary = $summary.text().trim()
+    fic.chapterCount = chapterCount
     fic.words = words
     fic.stats.reviews = reviews || 0
     fic.stats.favs = favs || 0
