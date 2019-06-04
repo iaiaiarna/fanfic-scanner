@@ -192,7 +192,7 @@ class ScannerDB extends EventEmitter {
   }
 
   serialize (sourceid) {
-    const result = fun()
+    const result = fun().toNdjson()
 
     this.db.readonly(async txn => {
       const meta = await txn.get(sql`
@@ -200,7 +200,7 @@ class ScannerDB extends EventEmitter {
         FROM source
         WHERE sourceid=${sourceid}`)
       meta.SOURCE = true
-      result.write(JSON.stringify(meta))
+      result.write(meta)
       return txn.iterate(sql`
         SELECT content
         FROM fic

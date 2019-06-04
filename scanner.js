@@ -299,7 +299,7 @@ async function runScan (scan, conf) {
 
 async function saveData (scan) {
   try {
-    await scan.data.serialize().map(_ => `${_}\n`).pipe(fs.createWriteStream(scan.dbfile + '.new'))
+    await scan.data.serialize().pipe(fs.createWriteStream(scan.dbfile + '.new'))
     fs.renameSync(scan.dbfile + '.new', scan.dbfile)
   } catch (err) {
     console.error('saveData', err.stack)
