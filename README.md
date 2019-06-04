@@ -18,7 +18,6 @@ This needs:
   * The whole code structure is weird here, scrapers should be split out
     possibly into their own stand alone module or modules.
   * Just everything to do with site.js needs to be less backwards.
-  * The Scryer support is, as yet, untested since porting to this form. (https://scryer.darklordpotter.net/)
   * Currently ao3, ffnet, wattpad, scryer (an index of ffnet) and forums
     using XenForo are supported.  More sites would be lovely, but certainly
     not release blocking.
