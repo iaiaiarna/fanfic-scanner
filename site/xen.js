@@ -15,7 +15,6 @@ const site = module.exports = {
     if (!href) return href
     return this.normalizeLink(href, base)
       .replace(qr`/members/[^.]+[.](\d+)/?$`, '/members/$1')
-      .replace(qr`/forum[.](questionablequesting[.]com)/`, '/$1/')
   },
   normalizeLink (href, base) {
     if (!href) return href
@@ -28,8 +27,6 @@ const site = module.exports = {
                .replace(qr`(/posts/[^/]+)/$`, '$1')
                .replace(qr`/threads/([^./]+[.])?(\d+)([/].*)?$`, '/threads/$2')
                .replace(qr`/goto/post[?]id=(\d+).*?$`, '/posts/$1')
-               .replace(/forum.questionable/, 'questionable')
-               .replace(/[/]sufficient/, '/forums.sufficient')
     return href
   }
 }
@@ -112,4 +109,3 @@ async function parseScan (scanLink, html, pageId) {
   }
   return scan
 }
-
