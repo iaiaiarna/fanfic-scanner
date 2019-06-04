@@ -53,13 +53,16 @@ async function parseScan (scanLink, html, pageId) {
       labels.push($label.text().trim())
       $label.remove()
     })
-    fic.summary = $summary.text().trim()
+    // remove labels from summary text
+    $summary.find('div').remove()
+
     $footer.find('span.text-muted').first().remove()
     $footer.find('.fa-angle-left').each((ii, angle) => $(angle).text('<'))
     $footer.find('.fa-angle-right').each((ii, angle) => $(angle).text('>'))
     const footer = $footer.text().trim().replace(/\s+/g, ' ')
     const info = ffp(footer)
     const {rating, words, reviews, favs, follows, chapterCount, status} = info
+    fic.summary = $summary.text().trim()
     fic.words = words
     fic.stats.reviews = reviews || 0
     fic.stats.favs = favs || 0
