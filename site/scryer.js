@@ -3,6 +3,8 @@ const Site = require('../site.js')
 const url = require('url')
 const cheerio = require('cheerio')
 const moment = require('moment')
+
+const qw = require('@perl/qw')
 const qr = require('@perl/qr')
 
 const site = module.exports = {
@@ -66,8 +68,8 @@ async function parseScan (scanLink, html, pageId) {
     fic.tags.push.apply(fic.tags, []
       .concat(info.genre.map(_ => `genre:${_}`))
       .concat([`rating:${rating}`])
-      .concat(info.characters.map(_ => `character:${c}`))
-      .concat(info.pairing.map(p => `ship:${p.join('/')}`))
+      .concat(info.characters.map(_ => `character:${_}`))
+      .concat(info.pairing.map(_ => `ship:${_.join('/')}`))
       .concat(labels.map(_ => `freeform:${_}`)))
 
     if (info.status === 'Complete') {
@@ -78,15 +80,21 @@ async function parseScan (scanLink, html, pageId) {
       }
     }
   }
+  return scan
 }
 
 //Complete - T - Romance - Ginny W. - 1,108 words - 1 chapter - 0 reviews - 0 favorites - 0 follows
 const hn = qr`[\d,]+`
-const genre = qr`(?:General|Romance|Humor|Drama|Poetry|Adventure|Mystery|Horror|Parody|Angst|Supernatural|Suspense|Sci-Fi|Fantasy|Spiritual|Tragedy|Western|Crime|Family|Hurt[/]Comfort|Friendship|[/])`
+const genre = qr.join('|', qw`
+  General Romance Humor Drama Poetry Adventure Mystery Horror Parody Angst
+  Supernatural Suspense Sci-Fi Fantasy Spiritual Tragedy Western Crime Family
+  Hurt/Comfort Friendship`)
 function ffp (status) {
-  let matched = status.match(qr`^(.*?) - (.*?) - (?:(${genre}(?:/${genre})*) )?- (?:(.*?) )?- (${hn}) words - (${hn}) chapterCount? - (${hn}) reviews? - (${hn}) favorites? - (${hn}) follows?$`)
+  let matched = status.match(qr`^(?<status>.*?) - (?<rating>.*?) - (?:(?<genres>${genre}(?:/${genre})*) )?- (?:(?<chars>.*?) )?- (?<words>${hn}) words - (?<chapters>${hn}) chapters? - (?<reviews>${hn}) reviews? - (?<favs>${hn}) favorites? - (?<follows>${hn}) follows?$`)
   if (!matched) throw new Error('Unparseable: »' + status + '«')
-  let cp = matched[4] || ''
+  const info = matched.groups
+
+  let cp = info.chars || ''
   let characters = []
   let pairing = []
   if (/<.+>/.test(cp)) {
@@ -97,16 +105,16 @@ function ffp (status) {
     characters = cp.split(/, /).filter(c => c !== '').map(c => c.trim())
   }
   return {
-    rating: matched[2],
-    genre: matched[3] ? matched[3].replace(/Hurt[/]Comfort/, 'HC').split(/[/]/).map(g => g === 'HC' ? 'Hurt/Comfort' : g) : [],
-    chapterCount: num(matched[6] || 0),
-    words: num(matched[5]),
-    reviews: num(matched[7]),
-    favs: num(matched[8]),
-    follows: num(matched[9]),
+    rating: info.rating,
+    genre: info.genres ? info.genres.replace(/Hurt[/]Comfort/, 'HC').split(/[/]/).map(g => g === 'HC' ? 'Hurt/Comfort' : g) : [],
+    chapterCount: num(info.chapters || 0),
+    words: num(info.words),
+    reviews: num(info.reviews),
+    favs: num(info.favs),
+    follows: num(info.follows),
     characters: characters || [],
     pairing: pairing || [],
-    status: matched[1]
+    status: info.status
   }
 }
 function num (n) {
