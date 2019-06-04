@@ -39,8 +39,7 @@ async function parseScan (scanLink, html, pageId) {
 
     const $storyLink = $item.find('a.story-link')
     fic.title = $storyLink.attr('data-story')
-    const matchId = url.resolve(scanLink, $storyLink.attr('href')).match(/[/]s[/](\d+)/)
-    fic.siteId = matchId && matchId[1]
+    fic.siteId = $storyLink.attr('data-story-id')
     fic.link = this.linkFromId(fic.siteId, scanLink)
     const $authorLink = $item.find('a.author-link')
     const author = $authorLink.text().trim()
