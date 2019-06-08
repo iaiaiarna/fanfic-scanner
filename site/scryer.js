@@ -7,6 +7,12 @@ const moment = require('moment')
 const qw = require('@perl/qw')
 const qr = require('@perl/qr')
 
+/*
+  NOTE: Due to limitations in the output format of Scryer's search, we can
+  only detect one fandom per fic.  If you search for crossovers with X, then
+  the fandom will always be the thing being crossed over into.
+*/
+
 const site = module.exports = {
   ...Site,
   parseScan,
@@ -59,22 +65,22 @@ async function parseScan (scanLink, html, pageId) {
     $footer.find('span.text-muted').first().remove()
     $footer.find('.fa-angle-left').each((ii, angle) => $(angle).text('<'))
     $footer.find('.fa-angle-right').each((ii, angle) => $(angle).text('>'))
-    const footer = $footer.text().trim().replace(/\s+/g, ' ')
+    const footer = $footer.text().replace(/\s+/g, ' ').trim()
     const info = ffp(footer)
-    const {rating, words, reviews, favs, follows, chapterCount, status} = info
+    const {xover, rating, words, reviews, favs, follows, chapterCount, status} = info
     fic.summary = $summary.text().trim()
     fic.chapterCount = chapterCount
     fic.words = words
     fic.stats.reviews = reviews || 0
     fic.stats.favs = favs || 0
     fic.stats.follows = follows || 0
+    if (xover) fic.tags.push(`fandom:${xover}`)
     fic.tags.push.apply(fic.tags, []
       .concat(info.genre.map(_ => `genre:${_}`))
       .concat([`rating:${rating}`])
       .concat(info.characters.map(_ => `character:${_}`))
       .concat(info.pairing.map(_ => `ship:${_.join('/')}`))
       .concat(labels.map(_ => `freeform:${_}`)))
-
     if (info.status === 'Complete') {
       if (info.chapterCount <= 1) {
         fic.tags.push('status:one-shot')
@@ -93,7 +99,7 @@ const genre = qr.join('|', qw`
   Supernatural Suspense Sci-Fi Fantasy Spiritual Tragedy Western Crime Family
   Hurt/Comfort Friendship`)
 function ffp (status) {
-  let matched = status.match(qr`^(?<status>.*?) - (?<rating>.*?) - (?:(?<genres>${genre}(?:/${genre})*) )?- (?:(?<chars>.*?) )?- (?<words>${hn}) words - (?<chapters>${hn}) chapters? - (?<reviews>${hn}) reviews? - (?<favs>${hn}) favorites? - (?<follows>${hn}) follows?$`)
+  let matched = status.match(qr`^((?<xover>.*?) - )?(?<status>.*?) - (?<rating>.*?) - (?:(?<genres>${genre}(?:/${genre})*) )?- (?:(?<chars>.*?) )?- (?<words>${hn}) words - (?<chapters>${hn}) chapters? - (?<reviews>${hn}) reviews? - (?<favs>${hn}) favorites? - (?<follows>${hn}) follows?$`)
   if (!matched) throw new Error('Unparseable: »' + status + '«')
   const info = matched.groups
 
@@ -108,6 +114,7 @@ function ffp (status) {
     characters = cp.split(/, /).filter(c => c !== '').map(c => c.trim())
   }
   return {
+    xover: info.xover,
     rating: info.rating,
     genre: info.genres ? info.genres.replace(/Hurt[/]Comfort/, 'HC').split(/[/]/).map(g => g === 'HC' ? 'Hurt/Comfort' : g) : [],
     chapterCount: num(info.chapters || 0),
