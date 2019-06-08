@@ -64,7 +64,7 @@ async function parseScan (scanLink, html, pageId) {
     if (fandom) {
       if (/^Crossover -/.test(fandom)) {
 	const [name, xover] = fandom.replace(/^Crossover - /, '').split(/ & /)
-	fic.tags.unshift(`fandom:${name}`, `xover:${xover}`)
+	fic.tags.unshift(`fandom:${name}`, `fandom:${xover}`)
       } else {
 	fic.tags.unshift(`fandom:${fandom}`)
       }
