@@ -294,9 +294,9 @@ async function runScan (scan, conf) {
   const opts = conf['force-cache'] ? {headers:{'cache-control': 'prefer-cached'}} : {}
   await site.updateScan(link => conf.fetch(link, opts), scan)
   status.activeScans[scan.dbfile].activity = 'saving'
+  await scan.data.setLastScan(scan.lastRun)
   await saveData(scan)
   delete status.activeScans[scan.dbfile]
-  await scan.data.setLastScan(scan.lastRun)
   console.log('Scanning', scan.dbfile, 'Complete')
 }
 
