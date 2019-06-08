@@ -36,19 +36,22 @@ async function scan (userConf) {
 
   await loadDatabase(conf)
 
-  const scanner = conf.scanner && startScanner(conf)
-  const webservice = startWebService(conf)
-  const scannerComplete = scanner && scanner.complete.then(() => webservice.stop())
+  const scanner = !conf.flush && conf.scanner && startScanner(conf)
+  const webservice = !conf.flush && startWebService(conf)
+  const webserviceComplete = webservice && webservice.complete
+  const scannerComplete = scanner && scanner.complete.then(() => webservice && webservice.stop())
+
+  if (conf.flush) await dumpAll(conf)
 
   process.once('SIGINT', () => {
     console.error("\nSIGINT: Exiting...")
-    webservice.stop()
+    webservice && webservice.stop()
     scanner && scanner.stop()
   })
 
   await Promise.all([
     scannerComplete,
-    webservice.complete
+    webserviceComplete
   ])
 
   await closeDatabase()
@@ -307,4 +310,18 @@ async function saveData (scan) {
       fs.unlinkSync(scan.dbfile + '.new')
     } catch (_) {}
   }
+}
+
+async function dumpAll (conf) {
+  const save = callLimit(saveData, 20)
+  console.log('Saving')
+  try {
+    await Promise.all(Object.values(db).map(_ => save(_).catch(err => {
+      console.error(`Skipping due to error ${_.dbfile}:`, err)
+    })))
+  } finally {
+    status.scanCompleted = unixTime()
+    status.scanRunning = false
+  }
+  console.log('Saved.')
 }
