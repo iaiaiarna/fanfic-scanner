@@ -106,13 +106,13 @@ class ScannerDB extends EventEmitter {
       UPDATE source SET ${{lastScan}} WHERE sourceid=${sourceid}`)
   }
 
-  async replace (site, sourceid, fic) {
-    validate('SNO', arguments)
+  async replace (sourceid, fic) {
+    validate('NO', arguments)
     return await this.db.serial(async txn => {
       const existing = await txn.get(sql`
         SELECT ficid, updated
         FROM fic
-        WHERE site=${site} AND siteid=${fic.siteId}`)
+        WHERE site=${fic.siteName} AND siteid=${fic.siteId}`)
       const now = unixTime()
       let sourceFic
       let ficid
@@ -147,7 +147,7 @@ class ScannerDB extends EventEmitter {
         ficid = await txn.value(sql`
           INSERT
           INTO fic (site, siteid, updated, added, scanned, status, content)
-          VALUES (${site}, ${fic.siteId}, ${updated}, ${added}, ${scanned}, ${status}, ${JSON.stringify(fic)})
+          VALUES (${fic.siteName}, ${fic.siteId}, ${updated}, ${added}, ${scanned}, ${status}, ${JSON.stringify(fic)})
           RETURNING ficid`)
         this.emit('updated', {
           db: {updated, added, scanned, status},
@@ -279,7 +279,7 @@ class ScannerSource {
     validate('O', arguments)
     if (!this.sourceid) return Promise.reject(new Error('replace called without init()'))
     if (!(fic instanceof Fic)) return Promise.reject(new Error('replace called with non-Fic object'))
-    return db.replace(fic.siteName, this.sourceid, fic)
+    return db.replace(this.sourceid, fic)
   }
 /* not in use
   get (match) {
