@@ -225,11 +225,10 @@ class ScannerDB extends EventEmitter {
         JOIN source_fic USING (ficid)
         WHERE sourceid=${sourceid}
         ORDER BY updated
-      `).pipe(result)
+      `).map(_ => this._rowToFic(_)).pipe(result)
     }).catch(err => result.emit('error', err))
 
     return result
-      .map(_ => this._rowToFic(_))
       .toNdjson()
   }
 
