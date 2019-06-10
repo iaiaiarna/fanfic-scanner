@@ -269,10 +269,12 @@ class ScannerSource {
   }
   setLastSeen (lastSeen) {
     validate('N', arguments)
+    if (!this.sourceid) return Promise.reject(new Error('setLastSeen called without init()'))
     return db.setLastSeen(this.sourceid, lastSeen)
   }
   setLastScan (lastScan) {
     validate('N', arguments)
+    if (!this.sourceid) return Promise.reject(new Error('setLastScan called without init()'))
     return db.setLastScan(this.sourceid, lastScan)
   }
   replace (fic) {
@@ -295,12 +297,15 @@ class ScannerSource {
   }
   getByIds (ids) {
     validate('A', arguments)
+    if (!this.sourceid) return Promise.reject(new Error('getByIds called without init()'))
     return db.getByIds(this.sourceid, ids)
   }
   lastSeen () {
+    if (!this.sourceid) return Promise.reject(new Error('lastSeen called without init()'))
     return db.lastSeen(this.sourceid)
   }
   lastScan () {
+    if (!this.sourceid) return Promise.reject(new Error('lastScan called without init()'))
     return db.lastScan(this.sourceid)
   }
   delete (fic) {
@@ -312,6 +317,7 @@ class ScannerSource {
     return db.ficsSince(when)
   }
   serialize () {
+    if (!this.sourceid) return Promise.reject(new Error('serialize called without init()'))
     return db.serialize(this.sourceid)
   }
 }
