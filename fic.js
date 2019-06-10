@@ -6,7 +6,6 @@ class Fic {
     this.rawContent = undefined
 
     this.setSite(site)
-    this.siteName = site.name
     this.siteId = undefined
     this.link = undefined
     this.published = undefined
@@ -32,13 +31,21 @@ class Fic {
   setSite (site) {
     if (typeof site === 'object') {
       this.site = site
+      this.siteName = this.site.name
     } else if (typeof site === 'string') {
-      this.site = require(`./site/${site}.js`)
+      try {
+        this.site = require(`./site/${site}.js`)
+        this.siteName = this.site.name
+      } catch (_) {
+        this.siteName = site
+      }
     }
   }
 
   addAuthor (name_or_au, link) {
-    const au = link ? this.site.newAuthor(name_or_au, link) : name_or_au
+    const au = link
+      ? (this.site ? this.site.newAuthor(name_or_au, link) : {name: name_or_au, link})
+      : name_or_au
     if (this.authors.some(_ => _.link === au.link)) return
     this.authors.push(au)
     this.authors.sort((aa, bb) => aa.name.localeCompare(bb.name) || aa.link.localeCompare(bb.link))
