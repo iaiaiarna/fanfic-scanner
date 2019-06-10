@@ -287,6 +287,7 @@ class ScannerSource {
       return db.replace(fic.siteName || fic.site || this.engine, this.sourceid, fic)
     }
   }
+/* not in use
   get (match) {
     validate('O', arguments)
     if (match.site && match.siteId) {
@@ -295,6 +296,7 @@ class ScannerSource {
       return Promise.reject(new Error('No index available for getting fics by ' + JSON.stringify(match)))
     }
   }
+*/
   getByIds (ids) {
     validate('A', arguments)
     if (!this.sourceid) return Promise.reject(new Error('getByIds called without init()'))
@@ -308,6 +310,7 @@ class ScannerSource {
     if (!this.sourceid) return Promise.reject(new Error('lastScan called without init()'))
     return db.lastScan(this.sourceid)
   }
+/* not used
   delete (fic) {
     validate('O', arguments)
     return db.delete(fic)
@@ -316,6 +319,7 @@ class ScannerSource {
     validate('N', arguments)
     return db.ficsSince(when)
   }
+*/
   serialize () {
     if (!this.sourceid) return Promise.reject(new Error('serialize called without init()'))
     return db.serialize(this.sourceid)
