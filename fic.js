@@ -58,6 +58,7 @@ class Fic {
   }
 
   equal (other) {
+    if (typeof other !== 'object') return false
     return deeplyEquivalent(this.toJSON(), other.toJSON())
   }
 
