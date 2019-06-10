@@ -4,6 +4,7 @@ const { PG, sql } = require('@iarna/pg')
 const fs = require('fs')
 const fun = require('funstream')
 const unixTime = require('./unix-time.js')
+const validate = require('aproba')
 
 class ScannerDB extends EventEmitter {
   constructor () {
@@ -68,6 +69,7 @@ class ScannerDB extends EventEmitter {
   }
 
   async addSource (source) {
+    validate('O', arguments)
     const tags = JSON.stringify(source.tags||[])
     return await this.db.serial(async txn => {
       const sourceid = await txn.value(sql`
@@ -92,17 +94,19 @@ class ScannerDB extends EventEmitter {
   }
 
   async setLastSeen (sourceid, lastSeen) {
+    validate('NN', arguments)
     await this.db.run(sql`
       UPDATE source SET ${{lastSeen}} WHERE sourceid=${sourceid}`)
   }
 
   async setLastScan (sourceid, lastScan) {
+    validate('NN', arguments)
     await this.db.run(sql`
       UPDATE source SET ${{lastScan}} WHERE sourceid=${sourceid}`)
   }
 
   async replace (site, sourceid, fic) {
-    if (!sourceid) throw new Error('MUST HAVE SOURCE')
+    validate('SNO', arguments)
     return await this.db.serial(async txn => {
       const existing = await txn.get(sql`
         SELECT ficid, updated
@@ -158,15 +162,17 @@ class ScannerDB extends EventEmitter {
     })
   }
 
-  getById (site, siteId) {
+  getById (siteName, siteId) {
+    validate('SN', arguments)
     return this.db.get(sql`
       SELECT content, updated, added, scanned, status
       FROM fic
-      WHERE site=${site}
+      WHERE site=${siteName}
         AND siteid=${siteId}`)
   }
 
   async getByIds (sourceid, ids) {
+    validate('NA', arguments)
     if (ids.length === 0) return []
     return (await this.db.all(sql`
       SELECT content, updated, added, scanned, status
@@ -176,6 +182,7 @@ class ScannerDB extends EventEmitter {
   }
 
   async lastSeen (sourceid) {
+    validate('N', arguments)
     return await this.db.value(sql`
       SELECT lastSeen
       FROM source
@@ -183,6 +190,7 @@ class ScannerDB extends EventEmitter {
   }
 
   async lastScan (sourceid) {
+    validate('N', arguments)
     return await this.db.value(sql`
       SELECT lastScan
       FROM source
@@ -190,6 +198,7 @@ class ScannerDB extends EventEmitter {
   }
 
   async delete (fic) {
+    validate('O', arguments)
     return await this.db.run(sql`
       DELETE
       FROM fic
@@ -198,6 +207,7 @@ class ScannerDB extends EventEmitter {
   }
 
   serialize (sourceid) {
+    validate('N', arguments)
     const result = fun()
 
     this.db.readonly(async txn => {
@@ -220,6 +230,7 @@ class ScannerDB extends EventEmitter {
   }
 
   ficsSince (when) {
+    validate('N', arguments)
     return this.db.iterate(sql`
       SELECT content, updated, added, scanned, status
       FROM fic
@@ -249,12 +260,15 @@ class ScannerSource {
     this.sourceid = await db.addSource(this.source)
   }
   async setLastSeen (lastSeen) {
+    validate('N', arguments)
     return await db.setLastSeen(this.sourceid, lastSeen)
   }
   async setLastScan (lastScan) {
+    validate('N', arguments)
     return await db.setLastScan(this.sourceid, lastScan)
   }
   async replace (fic) {
+    validate('O', arguments)
     // this can handle either Fic objects, or raw objects as produced by
     // serialize
     if (fic.SOURCE) {
@@ -264,6 +278,7 @@ class ScannerSource {
     }
   }
   async get (match) {
+    validate('O', arguments)
     if (match.siteId) {
       return this._rowToFic(await db.getById(match.site || this.engine, match.siteId))
     } else {
@@ -275,6 +290,7 @@ class ScannerSource {
     return this.site.newFic({db: {updated, added, scanned, status}, ...row.content})
   }
   async getByIds (ids) {
+    validate('A', arguments)
     return (await db.getByIds(this.sourceid, ids)).map(_ => this._rowToFic(_))
   }
   async lastSeen () {
@@ -284,9 +300,11 @@ class ScannerSource {
     return await db.lastScan(this.sourceid)
   }
   async delete (fic) {
+    validate('O', arguments)
     return await db.delete(fic)
   }
   ficsSince (when) {
+    validate('N', arguments)
     return db.ficsSince(when).map(_ => this._rowToFic(_))
   }
   serialize () {

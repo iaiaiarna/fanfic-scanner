@@ -10,6 +10,7 @@
     "@iarna/toml": "^2.2.3",
     "@perl/qr": "^1.2.0",
     "@perl/qw": "^1.0.1",
+    "aproba": "^2.0.0",
     "call-limit": "^1.1.1",
     "cheerio": "^1.0.0-rc.3",
     "funstream": "^4.2.0",
