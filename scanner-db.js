@@ -135,17 +135,17 @@ class ScannerDB extends EventEmitter {
           FROM source_fic
           WHERE ficid=${existing.ficid} AND sourceid=${sourceid}`)
       } else {
+        const scanned = (fic.db && fic.db.scanned) || now
+        const added = (fic.db && fic.db.added) || now
+        const updated = fic.updated || (fic.db && fic.db.updated)
+        const status = (fic.db && fic.db.status) || 'active'
         ficid = await txn.value(sql`
           INSERT
-          INTO fic (site, siteid, updated, added, scanned, content)
-          VALUES (${site}, ${fic.siteId}, ${fic.updated}, ${now}, ${now}, ${JSON.stringify(fic)})
+          INTO fic (site, siteid, updated, added, scanned, status, content)
+          VALUES (${site}, ${fic.siteId}, ${updated}, ${added}, ${scanned}, ${status}, ${JSON.stringify(fic)})
           RETURNING ficid`)
         this.emit('updated', {
-          db: {
-            updated: fic.updated,
-            scanned: now,
-            status: 'active'
-          },
+          db: {updated, added, scanned, status},
           ...(fic.toJSON ? fic.toJSON() : fic)
         })
       }
@@ -205,7 +205,7 @@ class ScannerDB extends EventEmitter {
       meta.SOURCE = true
       result.write(meta)
       return txn.iterate(sql`
-        SELECT content
+        SELECT content, updated, added, scanned, status
         FROM fic
         JOIN source_fic USING (ficid)
         WHERE sourceid=${sourceid}
