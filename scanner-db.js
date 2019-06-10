@@ -168,7 +168,11 @@ class ScannerDB extends EventEmitter {
 
   async getByIds (sourceid, ids) {
     if (ids.length === 0) return []
-    return (await this.db.all(sql`SELECT content FROM fic JOIN source_fic USING (ficid) WHERE ${{sourceid}} AND siteid IN ${ids}`))
+    return (await this.db.all(sql`
+      SELECT content, updated, added, scanned, status
+      FROM fic
+      JOIN source_fic USING (ficid)
+      WHERE ${{sourceid}} AND siteid IN ${ids}`))
   }
 
   async lastSeen (sourceid) {
@@ -217,7 +221,7 @@ class ScannerDB extends EventEmitter {
 
   ficsSince (when) {
     return this.db.iterate(sql`
-      SELECT content, updated, scanned, status
+      SELECT content, updated, added, scanned, status
       FROM fic
       WHERE updated >= ${when}
       ORDER BY updated
