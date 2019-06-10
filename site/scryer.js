@@ -1,6 +1,6 @@
 'use strict'
-const Site = require('../site.js')
-const url = require('url')
+const FFNet = require('./ffnet.js').Class
+const Scan = require('../scan.js')
 const cheerio = require('cheerio')
 const moment = require('moment')
 
@@ -13,120 +13,106 @@ const qr = require('@perl/qr')
   the fandom will always be the thing being crossed over into.
 */
 
-const site = module.exports = {
-  ...Site,
-  parseScan,
-  linkFromId (siteId, href) {
-    return `https://www.fanfiction.net/s/${siteId}`
-  }
-}
+//Complete - T - Romance - Ginny W. - 1,108 words - 1 chapter - 0 reviews - 0 favorites - 0 follows
+class Scryer extends FFNet {
+  async parseScan (scanLink, html, pageId) {
+    const $ = cheerio.load(html)
+    const nextPage = $('a[rel=next]').attr('href')
+    const base = $('base').attr('href') || scanLink
+    const scan = new Scan(this, this.normalizeLink(nextPage, base))
 
-async function parseScan (scanLink, html, pageId) {
-  const $ = cheerio.load(html)
-  const nextPage = $('a[rel=next]').attr('href')
-  const scan = {
-    nextPage: nextPage && url.resolve(scanLink, nextPage),
-    fics: [],
-  }
-
-  const items = []
-  $('div.panel').each((ii, item) => {
-    items.push($(item))
-  })
-
-  for (let $item of items) {
-    const fic = new Site.ScanFic()
-    scan.fics.push(fic)
-    fic.site = 'ffnet'
-    const $footer = $item.find('div.panel-footer')
-    fic.updated = moment($footer.find('time').attr('datetime')).unix()
-    fic.published = moment($footer.find('strong').first().attr('title').replace(/Published: (\S+) (\S+) UTC/, '$1T$2Z')).unix()
-    fic.rawContent = $item.text().trim()
-
-    const $storyLink = $item.find('a.story-link')
-    fic.title = $storyLink.attr('data-story')
-    fic.siteId = $storyLink.attr('data-story-id')
-    fic.link = this.linkFromId(fic.siteId, scanLink)
-    const $authorLink = $item.find('a.author-link')
-    const author = $authorLink.text().trim()
-    const authorUrl = $authorLink.attr('href') && this.normalizeAuthorLink(url.resolve(scanLink, $authorLink.attr('href')))
-    fic.authors.push({name: author, link: authorUrl})
-    const $summary = $item.find('div.story-summary')
-    const labels = []
-    const $labels = $summary.find('span.label')
-    $labels.each((ii, label) => {
-      const $label = $(label)
-      labels.push($label.text().trim())
-      $label.remove()
+    const items = []
+    $('div.panel').each((ii, item) => {
+      items.push($(item))
     })
-    // remove labels from summary text
-    $summary.find('div').remove()
 
-    $footer.find('span.text-muted').first().remove()
-    $footer.find('.fa-angle-left').each((ii, angle) => $(angle).text('<'))
-    $footer.find('.fa-angle-right').each((ii, angle) => $(angle).text('>'))
-    const footer = $footer.text().replace(/\s+/g, ' ').trim()
-    const info = ffp(footer)
-    const {xover, rating, words, reviews, favs, follows, chapterCount, status} = info
-    fic.summary = $summary.text().trim()
-    fic.chapterCount = chapterCount
-    fic.words = words
-    fic.stats.reviews = reviews || 0
-    fic.stats.favs = favs || 0
-    fic.stats.follows = follows || 0
-    if (xover) fic.tags.push(`fandom:${xover}`)
-    fic.tags.push.apply(fic.tags, []
-      .concat(info.genre.map(_ => `genre:${_}`))
-      .concat([`rating:${rating}`])
-      .concat(info.characters.map(_ => `character:${_}`))
-      .concat(info.pairing.map(_ => `ship:${_.join('/')}`))
-      .concat(labels.map(_ => `freeform:${_}`)))
-    if (info.status === 'Complete') {
-      if (info.chapterCount <= 1) {
-        fic.tags.push('status:one-shot')
-      } else {
-        fic.tags.push('status:complete')
+    for (let $item of items) {
+      const fic = scan.addFic()
+      const $footer = $item.find('div.panel-footer')
+      fic.updated = moment($footer.find('time').attr('datetime')).unix()
+      fic.published = moment($footer.find('strong').first().attr('title').replace(/Published: (\S+) (\S+) UTC/, '$1T$2Z')).unix()
+      fic.rawContent = $item.text().trim()
+
+      const $storyLink = $item.find('a.story-link')
+      fic.title = $storyLink.attr('data-story')
+      fic.siteId = $storyLink.attr('data-story-id')
+      fic.link = this.linkFromId(fic.siteId)
+      const $authorLink = $item.find('a.author-link')
+      const author = $authorLink.text().trim()
+      const authorUrl = this.normalizeAuthorLink($authorLink.attr('href'), base)
+      fic.addAuthor(author, authorUrl)
+      const $summary = $item.find('div.story-summary')
+      const labels = []
+      const $labels = $summary.find('span.label')
+      $labels.each((ii, label) => {
+        const $label = $(label)
+        labels.push($label.text().trim())
+        $label.remove()
+      })
+      // remove labels from summary text
+      $summary.find('div').remove()
+
+      $footer.find('span.text-muted').first().remove()
+      $footer.find('.fa-angle-left').each((ii, angle) => $(angle).text('<'))
+      $footer.find('.fa-angle-right').each((ii, angle) => $(angle).text('>'))
+      const footer = $footer.text().replace(/\s+/g, ' ').trim()
+      const info = this.parseSearchLine(footer)
+      const {xover, rating, words, reviews, favs, follows, chapterCount, status} = info
+      fic.summary = $summary.text().trim()
+      fic.chapterCount = chapterCount
+      fic.words = words
+      fic.stats.reviews = reviews || 0
+      fic.stats.favs = favs || 0
+      fic.stats.follows = follows || 0
+      if (xover) fic.tags.push(`fandom:${xover}`)
+      fic.tags.push.apply(fic.tags, []
+        .concat(info.genre.map(_ => `genre:${_}`))
+        .concat([`rating:${rating}`])
+        .concat(info.characters.map(_ => `character:${_}`))
+        .concat(info.pairing.map(_ => `ship:${_.join('/')}`))
+        .concat(labels.map(_ => `freeform:${_}`)))
+      if (info.status === 'Complete') {
+        if (info.chapterCount <= 1) {
+          fic.tags.push('status:one-shot')
+        } else {
+          fic.tags.push('status:complete')
+        }
       }
     }
+    return scan
   }
-  return scan
+
+  parseSearchLine (status) {
+    let matched = status.match(qr`^((?<xover>.*?) - )?(?<status>.*?) - (?<rating>.*?) - (?:(?<genres>${this.mGenres}) )?- (?:(?<chars>.*?) )?- (?<words>${this.mNum}) words - (?<chapters>${this.mNum}) chapters? - (?<reviews>${this.mNum}) reviews? - (?<favs>${this.mNum}) favorites? - (?<follows>${this.mNum}) follows?$`)
+    if (!matched) throw new Error('Unparseable: »' + status + '«')
+    const info = matched.groups
+
+    let cp = info.chars || ''
+    let characters = []
+    let pairing = []
+    if (/<.+>/.test(cp)) {
+      pairing = cp.match(/<(.+?)>/g).map(p => p.slice(1,-1).split(/, /))
+      cp = cp.replace(/<(.*?)>/g, '')
+    }
+    if (cp.length) {
+      characters = cp.split(/, /).filter(c => c !== '').map(c => c.trim())
+    }
+    return {
+      xover: info.xover,
+      rating: info.rating,
+      genre: info.genres ? info.genres.replace(qr`Hurt/Comfort`, 'HC').split(qr`/`).map(_ => _ === 'HC' ? 'Hurt/Comfort' : _) : [],
+      chapterCount: this.num(info.chapters || 0),
+      words: this.num(info.words),
+      reviews: this.num(info.reviews),
+      favs: this.num(info.favs),
+      follows: this.num(info.follows),
+      characters: characters || [],
+      pairing: pairing || [],
+      status: info.status
+    }
+  }
+
 }
 
-//Complete - T - Romance - Ginny W. - 1,108 words - 1 chapter - 0 reviews - 0 favorites - 0 follows
-const hn = qr`[\d,]+`
-const genre = qr.join('|', qw`
-  General Romance Humor Drama Poetry Adventure Mystery Horror Parody Angst
-  Supernatural Suspense Sci-Fi Fantasy Spiritual Tragedy Western Crime Family
-  Hurt/Comfort Friendship`)
-function ffp (status) {
-  let matched = status.match(qr`^((?<xover>.*?) - )?(?<status>.*?) - (?<rating>.*?) - (?:(?<genres>${genre}(?:/${genre})*) )?- (?:(?<chars>.*?) )?- (?<words>${hn}) words - (?<chapters>${hn}) chapters? - (?<reviews>${hn}) reviews? - (?<favs>${hn}) favorites? - (?<follows>${hn}) follows?$`)
-  if (!matched) throw new Error('Unparseable: »' + status + '«')
-  const info = matched.groups
-
-  let cp = info.chars || ''
-  let characters = []
-  let pairing = []
-  if (/<.+>/.test(cp)) {
-    pairing = cp.match(/<(.+?)>/g).map(p => p.slice(1,-1).split(/, /))
-    cp = cp.replace(/<(.*?)>/g, '')
-  }
-  if (cp.length) {
-    characters = cp.split(/, /).filter(c => c !== '').map(c => c.trim())
-  }
-  return {
-    xover: info.xover,
-    rating: info.rating,
-    genre: info.genres ? info.genres.replace(/Hurt[/]Comfort/, 'HC').split(/[/]/).map(g => g === 'HC' ? 'Hurt/Comfort' : g) : [],
-    chapterCount: num(info.chapters || 0),
-    words: num(info.words),
-    reviews: num(info.reviews),
-    favs: num(info.favs),
-    follows: num(info.follows),
-    characters: characters || [],
-    pairing: pairing || [],
-    status: info.status
-  }
-}
-function num (n) {
-  return Number(String(n).replace(/,/g, ''))
-}
+module.exports = new Scryer()
+module.exports.Class = Scryer

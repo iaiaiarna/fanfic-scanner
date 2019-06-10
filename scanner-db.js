@@ -187,7 +187,7 @@ class ScannerDB extends EventEmitter {
     return await this.db.run(sql`
       DELETE
       FROM fic
-      WHERE site=${fic.site},
+      WHERE site=${fic.siteName},
             siteid=${fic.siteId}`)
   }
 
@@ -231,7 +231,8 @@ const db = new ScannerDB()
 class ScannerSource {
   constructor (source) {
     this.source = source
-    this.site = source.site
+    this.engine = source.engine
+    this.site = require(`./site/${this.engine}.js`)
     this.sourceid = null
   }
   async init () {
@@ -244,21 +245,23 @@ class ScannerSource {
     return await db.setLastScan(this.sourceid, lastScan)
   }
   async replace (fic) {
+    // this can handle either Fic objects, or raw objects as produced by
+    // serialize
     if (fic.SOURCE) {
       return await this.setLastSeen(fic.lastSeen)
     } else {
-      return await db.replace(fic.site || this.site, this.sourceid, fic)
+      return await db.replace(fic.siteName || fic.site || this.engine, this.sourceid, fic)
     }
   }
   async get (match) {
     if (match.siteId) {
-      return await db.getById(this.site, match.siteId)
+      return this.site.newFic(await db.getById(this.engine, match.siteId))
     } else {
       throw new Error('No index available for getting fics by ' + JSON.stringify(match))
     }
   }
   async getByIds (ids) {
-    return await db.getByIds(this.sourceid, ids)
+    return (await db.getByIds(this.sourceid, ids)).map(_ => this.site.newFic(_))
   }
   async lastSeen () {
     return await db.lastSeen(this.sourceid)

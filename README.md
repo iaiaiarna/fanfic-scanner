@@ -15,9 +15,6 @@ This needs:
     facility, which is clearly mandatory before this is published.
 
 * Site support:
-  * The whole code structure is weird here, scrapers should be split out
-    possibly into their own stand alone module or modules.
-  * Just everything to do with site.js needs to be less backwards.
   * Currently ao3, ffnet, wattpad, scryer (an index of ffnet) and forums
     using XenForo are supported.  More sites would be lovely, but certainly
     not release blocking.

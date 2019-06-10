@@ -14,6 +14,7 @@ const callLimit = require('call-limit').promise
 const proxyFetch = require('./proxy-fetch.js')
 const unixTime = require('./unix-time.js')
 const service = require('./service.js')
+const updateScan = require('./update-scan.js')
 
 const sbTemplate = Handlebars.compile(fs.readFileSync(`${__dirname}/scanner-scoreboard.html`, 'utf8'))
 
@@ -290,9 +291,8 @@ async function runScan (scan, conf) {
     engine: scan.conf.engine,
     activity: 'scanning'
   }
-  const site = require(`./site/${scan.conf.engine}.js`)
   const opts = conf['force-cache'] ? {headers:{'cache-control': 'prefer-cached'}} : {}
-  await site.updateScan(link => conf.fetch(link, opts), scan)
+  await updateScan(link => conf.fetch(link, opts), scan)
   status.activeScans[scan.dbfile].activity = 'saving'
   await scan.data.setLastScan(scan.lastRun)
   await saveData(scan)
