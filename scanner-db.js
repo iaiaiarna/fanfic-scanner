@@ -220,7 +220,7 @@ class ScannerDB extends EventEmitter {
       meta.SOURCE = true
       result.write(meta)
       return txn.iterate(sql`
-        SELECT content, updated, added, scanned, status
+        SELECT content, site, updated, added, scanned, status
         FROM fic
         JOIN source_fic USING (ficid)
         WHERE sourceid=${sourceid}
@@ -236,7 +236,7 @@ class ScannerDB extends EventEmitter {
   ficsSince (when) {
     validate('N', arguments)
     return this.db.iterate(sql`
-      SELECT content, updated, added, scanned, status
+      SELECT content, site, updated, added, scanned, status
       FROM fic
       WHERE updated >= ${when}
       ORDER BY updated
