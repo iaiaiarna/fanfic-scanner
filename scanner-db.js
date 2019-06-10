@@ -158,13 +158,12 @@ class ScannerDB extends EventEmitter {
     })
   }
 
-  async getById (site, siteId) {
-    const content = await this.db.value(sql`
-      SELECT content
+  getById (site, siteId) {
+    return this.db.get(sql`
+      SELECT content, updated, added, scanned, status
       FROM fic
       WHERE site=${site}
         AND siteid=${siteId}`)
-    return content
   }
 
   async getByIds (sourceid, ids) {
@@ -195,7 +194,7 @@ class ScannerDB extends EventEmitter {
   }
 
   serialize (sourceid) {
-    const result = fun().toNdjson()
+    const result = fun()
 
     this.db.readonly(async txn => {
       const meta = await txn.get(sql`
@@ -210,7 +209,7 @@ class ScannerDB extends EventEmitter {
         JOIN source_fic USING (ficid)
         WHERE sourceid=${sourceid}
         ORDER BY updated
-      `).map(_ => _.content).pipe(result)
+      `).pipe(result)
     }).catch(err => result.emit('error', err))
 
     return result
@@ -222,7 +221,7 @@ class ScannerDB extends EventEmitter {
       FROM fic
       WHERE updated >= ${when}
       ORDER BY updated
-      `).map(_ => ({db: {updated: _.updated, scanned: _.scanned, status:_.status}, ..._.content}))
+      `)
   }
   end () {
     return this.db.end()
@@ -262,13 +261,17 @@ class ScannerSource {
   }
   async get (match) {
     if (match.siteId) {
-      return this.site.newFic(await db.getById(this.engine, match.siteId))
+      return this._rowToFic(await db.getById(match.site || this.engine, match.siteId))
     } else {
       throw new Error('No index available for getting fics by ' + JSON.stringify(match))
     }
   }
+  _rowToFic (row) {
+    const {updated, added, scanned, status} = row
+    return this.site.newFic({db: {updated, added, scanned, status}, ...row.content})
+  }
   async getByIds (ids) {
-    return (await db.getByIds(this.sourceid, ids)).map(_ => this.site.newFic(_))
+    return (await db.getByIds(this.sourceid, ids)).map(_ => this._rowToFic(_))
   }
   async lastSeen () {
     return await db.lastSeen(this.sourceid)
@@ -281,6 +284,8 @@ class ScannerSource {
   }
   serialize () {
     return db.serialize(this.sourceid)
+      .map(_ => this._rowToFic(_))
+      .toNdjson()
   }
 }
 
