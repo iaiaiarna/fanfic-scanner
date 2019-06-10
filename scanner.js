@@ -6,6 +6,7 @@ const fs = require('fs')
 const path = require('path')
 const fun = require('funstream')
 const ScannerDB = require('./scanner-db.js')
+const Fic = require('./fic.js')
 const qr = require('@perl/qr')
 const Handlebars = require('handlebars')
 const http = require('http')
@@ -247,7 +248,11 @@ async function importData (scan) {
 console.log('importing', scan.dbfile)
   try {
     for await (let fic of fun(fs.createReadStream(scan.dbfile)).ndjson()) {
-      await scan.data.replace(fic)
+      if (fic.SOURCE) {
+        await scan.data.setLastSeen(fic.lastSeen)
+      } else {
+        await scan.data.replace(new Fic(scan.engine).fromJSON(fic))
+      }
     }
   } catch (ex) {
     if (ex.code !== 'ENOENT') throw ex

@@ -260,8 +260,6 @@ Database methods from the point-of-view of a source
 class ScannerSource {
   constructor (source) {
     this.source = source
-    this.engine = source.engine
-    this.site = require(`./site/${this.engine}.js`)
     this.sourceid = null
   }
   async init () {
@@ -279,13 +277,9 @@ class ScannerSource {
   }
   replace (fic) {
     validate('O', arguments)
-    // this can handle either Fic objects, or raw objects as produced by
-    // serialize
-    if (fic.SOURCE) {
-      return this.setLastSeen(fic.lastSeen)
-    } else {
-      return db.replace(fic.siteName || fic.site || this.engine, this.sourceid, fic)
-    }
+    if (!this.sourceid) return Promise.reject(new Error('replace called without init()'))
+    if (!(fic instanceof Fic)) return Promise.reject(new Error('replace called with non-Fic object'))
+    return db.replace(fic.siteName, this.sourceid, fic)
   }
 /* not in use
   get (match) {
