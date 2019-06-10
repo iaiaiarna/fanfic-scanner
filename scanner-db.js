@@ -286,6 +286,9 @@ class ScannerSource {
   async delete (fic) {
     return await db.delete(fic)
   }
+  ficsSince (when) {
+    return db.ficsSince(when).map(_ => this._rowToFic(_))
+  }
   serialize () {
     return db.serialize(this.sourceid)
       .map(_ => this._rowToFic(_))
