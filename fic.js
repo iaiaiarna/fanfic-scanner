@@ -4,7 +4,7 @@ const deeplyEquivalent = require('./deeply-equivalent.js')
 class Fic {
   constructor (site) {
     this.rawContent = undefined
-    this.site = site
+    this.setSite(site)
     this.siteName = site.name
     this.siteId = undefined
     this.link = undefined
@@ -38,8 +38,15 @@ class Fic {
     return deeplyEquivalent(this.toJSON(), other.toJSON())
   }
 
+  setSite (site) {
+    if (typeof site === 'object') {
+      this.site = site
+    } else {
+      this.site = require(`./site/${site}.js`)
+    }
+  }
+
   fromJSON (obj) {
-    this.site = require(`./site/${obj.site}.js`)
     this.siteName = obj.site
     this.link = obj.link
     this.updated = obj.updated
