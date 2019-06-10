@@ -267,45 +267,45 @@ class ScannerSource {
   async init () {
     this.sourceid = await db.addSource(this.source)
   }
-  async setLastSeen (lastSeen) {
+  setLastSeen (lastSeen) {
     validate('N', arguments)
-    return await db.setLastSeen(this.sourceid, lastSeen)
+    return db.setLastSeen(this.sourceid, lastSeen)
   }
-  async setLastScan (lastScan) {
+  setLastScan (lastScan) {
     validate('N', arguments)
-    return await db.setLastScan(this.sourceid, lastScan)
+    return db.setLastScan(this.sourceid, lastScan)
   }
-  async replace (fic) {
+  replace (fic) {
     validate('O', arguments)
     // this can handle either Fic objects, or raw objects as produced by
     // serialize
     if (fic.SOURCE) {
-      return await this.setLastSeen(fic.lastSeen)
+      return this.setLastSeen(fic.lastSeen)
     } else {
-      return await db.replace(fic.siteName || fic.site || this.engine, this.sourceid, fic)
+      return db.replace(fic.siteName || fic.site || this.engine, this.sourceid, fic)
     }
   }
-  async get (match) {
+  get (match) {
     validate('O', arguments)
-    if (match.siteId) {
-      return this._rowToFic(await db.getById(match.site || this.engine, match.siteId))
+    if (match.site && match.siteId) {
+      return db.getdById(match.site, match.siteId)
     } else {
-      throw new Error('No index available for getting fics by ' + JSON.stringify(match))
+      return Promise.reject(new Error('No index available for getting fics by ' + JSON.stringify(match)))
     }
   }
-  async getByIds (ids) {
+  getByIds (ids) {
     validate('A', arguments)
-    return await db.getByIds(this.sourceid, ids)
+    return db.getByIds(this.sourceid, ids)
   }
-  async lastSeen () {
-    return await db.lastSeen(this.sourceid)
+  lastSeen () {
+    return db.lastSeen(this.sourceid)
   }
-  async lastScan () {
-    return await db.lastScan(this.sourceid)
+  lastScan () {
+    return db.lastScan(this.sourceid)
   }
-  async delete (fic) {
+  delete (fic) {
     validate('O', arguments)
-    return await db.delete(fic)
+    return db.delete(fic)
   }
   ficsSince (when) {
     validate('N', arguments)
