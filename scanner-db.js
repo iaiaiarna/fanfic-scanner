@@ -4,6 +4,7 @@ const { PG, sql } = require('@iarna/pg')
 const fs = require('fs')
 const fun = require('funstream')
 const unixTime = require('./unix-time.js')
+const Fic = require('./fic.js')
 const validate = require('aproba')
 
 class ScannerDB extends EventEmitter {
@@ -162,13 +163,13 @@ class ScannerDB extends EventEmitter {
     })
   }
 
-  getById (siteName, siteId) {
+  async getById (site, siteId) {
     validate('SN', arguments)
-    return this.db.get(sql`
+    return this._rowToFic(await this.db.get(sql`
       SELECT content, updated, added, scanned, status
       FROM fic
       WHERE site=${siteName}
-        AND siteid=${siteId}`)
+        AND siteid=${siteId}`))
   }
 
   async getByIds (sourceid, ids) {
@@ -179,6 +180,7 @@ class ScannerDB extends EventEmitter {
       FROM fic
       JOIN source_fic USING (ficid)
       WHERE ${{sourceid}} AND siteid IN ${ids}`))
+     .map(_ => this._rowToFic(_))
   }
 
   async lastSeen (sourceid) {
@@ -227,6 +229,8 @@ class ScannerDB extends EventEmitter {
     }).catch(err => result.emit('error', err))
 
     return result
+      .map(_ => this._rowToFic(_))
+      .toNdjson()
   }
 
   ficsSince (when) {
@@ -236,10 +240,14 @@ class ScannerDB extends EventEmitter {
       FROM fic
       WHERE updated >= ${when}
       ORDER BY updated
-      `)
+      `).map(_ => this._rowToFic(_))
   }
   end () {
     return this.db.end()
+  }
+  _rowToFic (row) {
+    const {site, updated, added, scanned, status} = row
+    return new Fic(site).fromJSON({db: {updated, added, scanned, status}, ...row.content})
   }
 }
 
@@ -285,13 +293,9 @@ class ScannerSource {
       throw new Error('No index available for getting fics by ' + JSON.stringify(match))
     }
   }
-  _rowToFic (row) {
-    const {updated, added, scanned, status} = row
-    return this.site.newFic({db: {updated, added, scanned, status}, ...row.content})
-  }
   async getByIds (ids) {
     validate('A', arguments)
-    return (await db.getByIds(this.sourceid, ids)).map(_ => this._rowToFic(_))
+    return await db.getByIds(this.sourceid, ids)
   }
   async lastSeen () {
     return await db.lastSeen(this.sourceid)
@@ -305,12 +309,10 @@ class ScannerSource {
   }
   ficsSince (when) {
     validate('N', arguments)
-    return db.ficsSince(when).map(_ => this._rowToFic(_))
+    return db.ficsSince(when)
   }
   serialize () {
     return db.serialize(this.sourceid)
-      .map(_ => this._rowToFic(_))
-      .toNdjson()
   }
 }
 
