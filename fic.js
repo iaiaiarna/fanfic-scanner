@@ -4,6 +4,7 @@ const deeplyEquivalent = require('./deeply-equivalent.js')
 class Fic {
   constructor (site) {
     this.rawContent = undefined
+
     this.setSite(site)
     this.siteName = site.name
     this.siteId = undefined
@@ -11,14 +12,29 @@ class Fic {
     this.published = undefined
     this.updated = undefined
     this.title = undefined
+
     this.authors = []
-    this.summary = undefined
+
     this.words = undefined
     this.chapterCount = undefined
     this.maxChapterCount = undefined
     this.cover = undefined
+
     this.tags = []
     this.stats = {}
+
+    this.summary = undefined
+
+    // db holds some values that are full database fields, used in serialization/deserialization
+    this.db = undefined
+  }
+
+  setSite (site) {
+    if (typeof site === 'object') {
+      this.site = site
+    } else if (typeof site === 'string') {
+      this.site = require(`./site/${site}.js`)
+    }
   }
 
   addAuthor (name_or_au, link) {
@@ -38,26 +54,27 @@ class Fic {
     return deeplyEquivalent(this.toJSON(), other.toJSON())
   }
 
-  setSite (site) {
-    if (typeof site === 'object') {
-      this.site = site
-    } else {
-      this.site = require(`./site/${site}.js`)
-    }
-  }
-
   fromJSON (obj) {
-    this.siteName = obj.site
+    this.setSite(obj.db.site)
+    this.siteId = obj.siteId || obj.siteid
     this.link = obj.link
+    this.published = obj.published
     this.updated = obj.updated
     this.title = obj.title
+
     obj.authors.forEach(_ => this.addAuthor(_.name, _.link))
+
     this.words = obj.words
     this.chapterCount = obj.chapterCount
+    this.maxChapterCount = obj.maxChapterCount
     this.cover = obj.cover
+
     this.stats = {...obj.stats}
     this.tags = [...obj.tags]
+
     this.summary = obj.summary
+    this.db = {...obj.db}
+
     return this
   }
       
@@ -69,14 +86,19 @@ class Fic {
       published: this.published,
       updated: this.updated,
       title: this.title,
+
       authors: this.authors,
+
       words: this.words,
       chapterCount: this.chapterCount,
       maxChapterCount: this.maxChapterCount,
       cover: this.cover,
+
       stats: this.stats,
       tags: this.tags,
+
       summary: this.summary,
+      db: this.db
     }
   }
 }
