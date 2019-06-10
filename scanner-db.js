@@ -116,7 +116,10 @@ class ScannerDB extends EventEmitter {
         if (existing.updated > existing.scanned || fic.updated >= existing.updated) {
           await txn.run(sql`
             UPDATE fic
-            SET content=${JSON.stringify(fic)}, updated=${fic.updated}, scanned=${now}, status='active'
+            SET content=${JSON.stringify(fic)},
+                updated=${fic.updated},
+                scanned=${now},
+                status='active'
             WHERE ${{ficid}}`)
           this.emit('updated', {
             db: {
@@ -128,7 +131,7 @@ class ScannerDB extends EventEmitter {
           })
         }
         sourceFic = await txn.get(sql`
-          SELECT *
+          SELECT ficid, sourceid
           FROM source_fic
           WHERE ficid=${existing.ficid} AND sourceid=${sourceid}`)
       } else {
@@ -227,6 +230,10 @@ class ScannerDB extends EventEmitter {
 }
 
 const db = new ScannerDB()
+
+/*
+Database methods from the point-of-view of a source
+*/
 
 class ScannerSource {
   constructor (source) {
