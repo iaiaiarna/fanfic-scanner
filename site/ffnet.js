@@ -7,18 +7,27 @@ const Site = require('../site.js')
 const Scan = require('../scan.js')
 const unixTime = require('../unix-time.js')
 
+const mNum = qr`[\d,]+`
+const mGenre = qr.join('|', qw`
+  General Romance Humor Drama Poetry Adventure Mystery Horror Parody
+  Angst Supernatural Suspense Sci-Fi Fantasy Spiritual Tragedy Western
+  Crime Family Hurt/Comfort Friendship`)
+const mGenres = qr`${mGenre}(?:/${mGenre})*`
+const ratingMap = {
+  'K': 'General Audiences',
+  'K+': 'General Audiences',
+  'T': 'Teen And Up Audiences',
+  'M': 'Mature'
+}
+
 class FFNet extends Site {
   constructor () {
     super()
     this.name = 'ffnet'
-
-    this.mNum = qr`[\d,]+`
-    const mGenre = qr.join('|', qw`
-      General Romance Humor Drama Poetry Adventure Mystery Horror Parody
-      Angst Supernatural Suspense Sci-Fi Fantasy Spiritual Tragedy Western
-      Crime Family Hurt/Comfort Friendship`)
-    this.mGenres = qr`${mGenre}(?:/${mGenre})*`
   }
+  mNum () { return mNum }
+  mGenres () { return mGenres }
+  ratingMap (key) { return ratingMap[key] }
   linkFromId (siteId) {
     return `https://www.fanfiction.net/s/${siteId}`
   }
@@ -34,48 +43,72 @@ class FFNet extends Site {
       items.push($(item))
     })
 
+    const canonicalUrl = $('link[rel="canonical"]').attr('href')
+    const pageTitle = $('title').text().replace(/ [|] FanFiction$/, '')
+    let pageAuthorUrl
+    let pageAuthorName
+    let pageFandom
+    if (qr`/u/`.test(canonicalUrl)) {
+      pageAuthorUrl = canonicalUrl
+      pageAuthorName = pageTitle
+    } else if (pageTitle.match(/ (Crossover|FanFiction) Archive$/)) {
+      pageFandom = pageTitle.replace(/ (Crossover|FanFiction) Archive$/, '')
+    }
+
     for (let $item of items) {
       const fic = scan.addFic()
-      fic.updated = moment.unix($item.find('span[data-xutime]').first().attr('data-xutime')).unix()
-      fic.rawContent = $item.text().trim()
+      const firstDate = moment.unix($item.find('span[data-xutime]').first().attr('data-xutime')).unix()
+      const secondDate = moment.unix($item.find('span[data-xutime]').next().attr('data-xutime')).unix()
+      if (secondDate > 0) {
+        fic.updated = firstDate
+        fic.published = secondDate
+      } else {
+        fic.updated = fic.published = firstDate
+      }
 
-      const matchId = this.normalizeFicLink($item.find('a.stitle').attr('href'), base)
-        .match(qr`/s/(\d+)`)
+      const matchId = $item.find('a.stitle').attr('href').match(qr`/s/(\d+)`)
       fic.siteId = matchId && matchId[1]
       fic.link = this.linkFromId(fic.siteId)
       fic.title = $item.find('a.stitle').text().trim()
-      let $author = $item.find('a.stitle').next('a')
-      if ($author.text().trim() === '') $author = $author.next('a')
-      const author = $author.text().trim()
-      const authorUrl = this.normalizeAuthorLink($author.attr('href'), base)
-      fic.addAuthor(author, authorUrl)
+
+      let $author = $item.find('a.stitle').next('a[class!="reviews"]')
+      if ($author.text().trim() === '') $author = $author.next('a[class!="reviews"]')
+      const author = $author.text().trim() || pageTitle
+      const authorUrl = $author.attr('href') || canonicalUrl
+      if (authorUrl) fic.addAuthor(author, authorUrl, base)
       const infoline = $item.find('.xgray').text()
       const info = this.parseSearchLine(infoline)
-      let {fandom, language, rating, words, reviews, favs, follows, updated, published, chapterCount} = info
+      let {crossover, fandom, language, rating, words, reviews, favs, follows, updated, published, chapterCount} = info
+      if (!fandom) fandom = pageFandom
+      fic.rating = this.ratingMap(rating)
       fic.chapterCount = chapterCount
       fic.words = words
       fic.stats.reviews = reviews || 0
       fic.stats.favs = favs || 0
       fic.stats.follows = follows || 0
-      if (!updated || (fic.updated && updated < fic.updated)) updated = fic.updated
-      if (published && published > 0) fic.published = published
-      fic.updated = updated
+      if (!fic.updated) fic.updated = updated
+      if (!fic.published) fic.published = published
 
       const img_src = $item.find('img').attr('data-original')
       const img = img_src ? this.normalizeLink(img_src, base).replace(qr`/(75|150)/`, '/180/') : undefined
       if (img) fic.cover = img
 
 
-      if (fandom) {
-        if (/^Crossover -/.test(fandom)) {
-          const [name, xover] = fandom.replace(/^Crossover - /, '').split(/ & /)
-          fic.tags.unshift(`fandom:${name}`, `fandom:${xover}`)
-        } else {
-          fic.tags.unshift(`fandom:${fandom}`)
+      if (crossover) {
+        if (qr`^${pageFandom} & `.test(fandom)) {
+          const xover = fandom.replace(qr`^${pageFandom} & `, '')
+          fic.tags.push(`fandom:${pageFandom}`, `fandom:${xover}`)
+        } else if (qr` & ${pageFandom}$`.test(fandom)) {
+          const xover = fandom.replace(qr` & ${pageFandom}$`, '')
+          fic.tags.push(`fandom:${pageFandom}`, `fandom:${xover}`)
+        } else if (fandom.match(/&/g).length === 1) {
+          const [fandom1, fandom2] = fandom.replace(/^Crossover - /, '').split(/ & /)
+          fic.tags.push(`fandom:${fandom1}`, `fandom:${fandom2}`)
         }
+      } else if (fandom) {
+        fic.tags.push(`fandom:${fandom}`)
       }
-      fic.tags.push('language:' + language)
-      fic.tags.push('rating:' + rating)
+      fic.language = language
       info.genre.map(g => 'genre:' + g).forEach(_ => fic.tags.push(_))
       info.characters.map(c => 'character:' + c).forEach(_ => fic.tags.push(_))
       for (let p of info.pairing) {
@@ -83,76 +116,87 @@ class FFNet extends Site {
         for (let c of p) fic.tags.push('character:' + c)
       }
       if (info.status === 'Complete') {
-        if (info.chapterCount <= 1) {
-          fic.tags.push('status:one-shot')
-        } else {
-          fic.tags.push('status:complete')
-        }
+        fic.status = 'complete'
+        fic.maxChapterCount = fic.chapterCount
+      } else {
+        fic.status = 'in-progress'
       }
       
       const $desc = $item.find('div.z-indent')
       $desc.find('div').remove()
-      fic.summary = $desc.text().trim()
+      fic.summary = $desc.text().trim().replace(/</g, '&lt;')
     }
     return scan
   }
 
   parseSearchLine (status) {
-    let matched = status.match(qr`^Rated:\s+(\S+)\s+-\s+([^-]+)(?:\s+-\s+(${this.mGenres}))?\s+-\s+Chapters:\s+(\d+)\s+-\s+Words:\s+(${this.mNum})(?:\s+-\s+Reviews:\s+(${this.mNum}))?(?:\s+-\s+Favs: (${this.mNum}))?(?:\s+-\s+Follows:\s+(${this.mNum}))?(?:\s+-\s+Updated:\s+([^-]+))?\s+-\s+Published:\s+([^-]+)(?:\s+-\s+(.+?))?(?:\s+-\s+(.+?))?$`)
-    if (!matched) matched = status.match(qr`^Crossover - .*? - Rated:\s+(\S+)\s+-\s+([^-]+)(?:\s+-\s+(${this.mGenres}))?\s+-\s+Chapters:\s+(\d+)\s+-\s+Words:\s+(${this.mNum})(?:\s+-\s+Reviews:\s+(${this.mNum}))?(?:\s+-\s+Favs: (${this.mNum}))?(?:\s+-\s+Follows:\s+(${this.mNum}))?(?:\s+-\s+Updated:\s+([^-]+))?\s+-\s+Published:\s+([^-]+)(?:\s+-\s+(.+?))?(?:\s+-\s+(.+?))?$`)
-    if (!matched) matched = status.match(qr`^Rated:\s+(\S+)\s+-\s+([^-]+)(?:\s+-\s+(${this.mGenres}))?(?:\s+-\s+Chapters:\s+(\d+))?\s+-\s+Words:\s+(${this.mNum})(?:\s+-\s+Reviews:\s+(${this.mNum}))?(?:\s+-\s+Favs: (${this.mNum}))?(?:\s+-\s+Follows:\s+(${this.mNum}))?(?:\s+-\s+Updated:\s+([^-]+))?\s+-\s+Published:\s+([^-]+)(?:\s+-\s+(.+?))?(?:\s+-\s+(.+?))?$`)
-    if (!matched) matched = status.match(qr`^.* - Rated:\s+(\S+)\s+-\s+([^-]+)(?:\s+-\s+(${this.mGenres}))?\s+-\s+Chapters:\s+(\d+)\s+-\s+Words:\s+(${this.mNum})(?:\s+-\s+Reviews:\s+(${this.mNum}))?(?:\s+-\s+Favs: (${this.mNum}))?(?:\s+-\s+Follows:\s+(${this.mNum}))?(?:\s+-\s+Updated:\s+([^-]+))?\s+-\s+Published:\s+([^-]+)(?:\s+-\s+(.+?))?(?:\s+-\s+(.+?))?$`)
+    const mNum = this.mNum()
+    const mGenres = this.mGenres()
+    // Author story lists
+    let matched = status.match(qr.join('', [
+      qr`^`,
+      qr`(?:(?<crossover>Crossover) - )?`,
+      qr`(?:(?<fandom>.+?) - )?`,
+      qr`Rated: (?<rating>..?)`,
+      qr` - (?<language>.+?)`,
+      qr`(?: - (?<genres>${mGenres}))?`,
+      qr` - Chapters: (?<chapters>${mNum})`,
+      qr` - Words: (?<words>${mNum})`,
+      qr`(?: - Reviews: (?<reviews>${mNum}))?`,
+      qr`(?: - Favs: (?<favs>${mNum}))?`,
+      qr`(?: - Follows: (?<follows>${mNum}))?`,
+      qr`(?: - Updated: (?<updated>\S+))?`,
+      qr` - Published: (?<published>\S+)`,
+      qr`(?: - (?<charship>.*?))?`,
+      qr`(?: - (?<status>Complete))?`,
+      qr`$`
+    ]))
+
     if (!matched) throw new Error('Unparseable: ' + status)
-    let fandomMatch = status.match(/^(.*?) - Rated:/)
-    let fandom = fandomMatch && fandomMatch[1].trim()
-    let ficStatus = matched[12] && matched[12].trim()
-    let cp = (matched[11] || '').trim()
+    let info = matched.groups
+
+    let cp = (info.charship || '').trim()
     let characters = []
     let pairing = []
-    if (cp === 'Complete') {
-      ficStatus = 'Complete'
-      cp = ''
-    }
     if (/\[.+\]/.test(cp)) {
-      pairing = cp.match(/\[(.+?)\]/g).map(p => p.slice(1,-1).split(/, /))
+      pairing = cp.match(/\[(.+?)\]/g).map(_ => _.slice(1,-1).split(/, /))
       cp = cp.replace(/\[(.*?)\]/g, '')
     }
     if (cp.length) {
-      characters = cp.split(/, /).filter(c => c !== '').map(c => c.trim())
+      characters = cp.split(/, /).filter(_ => _ !== '').map(_ => _.trim())
     }
     return {
-      fandom: fandom,
-      rating: matched[1],
-      language: matched[2],
-      genre: matched[3] ? matched[3].replace(qr`Hurt/Comfort`, 'HC').split(qr`/`).map(g => g === 'HC' ? 'Hurt/Comfort' : g) : [],
-      chapterCount: this.num(matched[4] || 0),
-      reviews: this.num(matched[6]),
-      favs: this.num(matched[7]),
-      follows: this.num(matched[8]),
-      updated: this.date(matched[9]),
-      published: this.date(matched[10]),
+      crossover: info.crossover,
+      fandom: info.fandom,
+      rating: info.rating,
+      language: info.language.trim(),
+      genre: info.genres ? info.genres.replace(qr`Hurt/Comfort`, 'HC').split(qr`/`).map(_ => _ === 'HC' ? 'Hurt/Comfort' : _) : [],
+      chapterCount: this.num(info.chapters),
+      words: this.num(info.words),
+      reviews: this.num(info.reviews),
+      favs: this.num(info.favs),
+      follows: this.num(info.follows),
+      updated: this.date(info.updated),
+      published: this.date(info.published),
       characters: characters || [],
       pairing: pairing || [],
-      status: ficStatus
+      status: info.status
     }
-  }
-
-  num (n) {
-    return Number(String(n).replace(/,/g, ''))
   }
 
   date (d) {
     if (d==null) return d
+    d = d.trim()
     let parsed
     if (qr`/`.test(d)) {
       var sp = d.split(qr`/`)
       parsed = moment(sp[2] + '-' + sp[0] + '-' + sp[1], 'YYYY-MM-DD').unix()
     } else if (/(\d+)h/.test(d)) {
       const [, hours] = /(\d+)h/.exec(d)
-      parsed = (Math.round(unixTime()/3600) - hours) * 3600
+      parsed = moment().utc().subtract(2 + Number(hours), 'hour').unix()
     } else if (/(\d+)m/.test(d)) {
       const [, min] = /(\d+)m/.exec(d)
-      parsed = (Math.round(unixTime()/60) - min) * 60
+      parsed = moment().utc().subtract(2, 'hour').subtract(min, 'minute').unix()
     } else {
       parsed = moment(d, 'MM-DD').unix()
     }
