@@ -1,9 +1,7 @@
 'use strict'
 const Site = require('../site.js')
 const Scan = require('../scan.js')
-const cheerio = require('cheerio')
 const moment = require('moment')
-const done = new Error()
 const qr = require('@perl/qr')
 
 class WattPad extends Site {
