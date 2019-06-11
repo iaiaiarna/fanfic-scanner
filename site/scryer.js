@@ -15,7 +15,7 @@ const qr = require('@perl/qr')
 
 //Complete - T - Romance - Ginny W. - 1,108 words - 1 chapter - 0 reviews - 0 favorites - 0 follows
 class Scryer extends FFNet {
-  async parseScan (scanLink, html, pageId) {
+  parseScan (scanLink, html) {
     const $ = cheerio.load(html)
     const nextPage = $('a[rel=next]').attr('href')
     const base = $('base').attr('href') || scanLink

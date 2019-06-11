@@ -22,7 +22,7 @@ class FFNet extends Site {
   linkFromId (siteId) {
     return `https://www.fanfiction.net/s/${siteId}`
   }
-  async parseScan (scanLink, html, pageId) {
+  parseScan (scanLink, html, pageId) {
     const $ = cheerio.load(html)
     const nextPage = $('a:contains(Next »)').attr('href')
     const base = $('base').attr('href') || scanLink

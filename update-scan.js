@@ -15,7 +15,7 @@ async function updateScan (fetch, activeScan) {
   let newerThan = lastSeen
   while (nextPage) {
     const res = await fetch(site.fetchLink(nextPage))
-    const scan = await site.parseScan(nextPage, await res.buffer(), pageId)
+    const scan = site.parseScan(nextPage, await res.buffer(), pageId)
     const existingItems = {}
     const existingFics = await activeScan.data.getByIds(scan.fics.map(_ => _.siteId))
     existingFics.forEach(existing => {

@@ -18,7 +18,7 @@ class AO3 extends Site {
   linkFromId (siteId) {
     return `https://archiveofourown.org/works/${siteId}`
   }
-  async parseScan (scanLink, html, pageId) {
+  parseScan (scanLink, html) {
     const $ = cheerio.load(html)
     const nextPage = $('a[rel=next]').attr('href')
     const base = $('base').attr('href') || scanLink

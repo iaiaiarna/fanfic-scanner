@@ -46,7 +46,7 @@ class XenForo extends Site {
       .replace(qr`/goto/post[?]id=(\d+).*?$`, '/posts/$1')
   }
 
-  async parseScan (scanLink, html, pageId) {
+  parseScan (scanLink, html) {
     // NOTE: This is an _extremely_ naive domain name extractor.  It takes
     // the last two names in the fqdn, so this'll pick bar.baz from
     // foo.bar.baz.  This is right in the common case, but may be wrong for

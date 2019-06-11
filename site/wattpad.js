@@ -20,7 +20,7 @@ class WattPad extends Site {
   linkFromId (siteId) {
     return `https://www.wattpad.com/story/${siteId}`
   }
-  async parseScan (scanLink, rawJson, pageId) {
+  parseScan (scanLink, rawJson) {
     const json = JSON.parse(rawJson)
     const nextPage = json.nextUrl
     const scan = new Scan(this, this.normalizeLink(nextPage, scanLink))
