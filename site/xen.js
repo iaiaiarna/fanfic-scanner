@@ -121,8 +121,8 @@ class XenForo extends Site {
       if (/in forum:\s*Quest/i.test($item.find('.meta').text())) {
         fic.tags.push('forum:Quest')
       }
-      if (!fic.tags.some(_ => _.startsWith('status:') && /(?<!never )\b(complete|finished)\b/i.test(title))) {
-        fic.tags.push('status:complete')
+      if (/(?<!never )\b(complete|finished)\b/i.test(fic.title)) {
+        fic.status = 'complete'
       }
     }
     return scan
