@@ -39,8 +39,8 @@ class ScannerDB extends EventEmitter {
         sourceid SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
         tags JSONB NOT NULL,
-        lastSeen INTEGER,
-        lastScan INTEGER
+        lastseen INTEGER,
+        lastscan INTEGER
       );
       CREATE TABLE fic (
         ficid SERIAL PRIMARY KEY,
@@ -94,16 +94,16 @@ class ScannerDB extends EventEmitter {
     })
   }
 
-  async setLastSeen (sourceid, lastSeen) {
+  async setLastSeen (sourceid, lastseen) {
     validate('NN', arguments)
     await this.db.run(sql`
-      UPDATE source SET ${{lastSeen}} WHERE sourceid=${sourceid}`)
+      UPDATE source SET ${{lastseen}} WHERE sourceid=${sourceid}`)
   }
 
-  async setLastScan (sourceid, lastScan) {
+  async setLastScan (sourceid, lastscan) {
     validate('NN', arguments)
     await this.db.run(sql`
-      UPDATE source SET ${{lastScan}} WHERE sourceid=${sourceid}`)
+      UPDATE source SET ${{lastscan}} WHERE sourceid=${sourceid}`)
   }
 
   async replace (sourceid, fic) {
@@ -186,7 +186,7 @@ class ScannerDB extends EventEmitter {
   async lastSeen (sourceid) {
     validate('N', arguments)
     return await this.db.value(sql`
-      SELECT lastSeen
+      SELECT lastseen
       FROM source
       WHERE sourceid=${sourceid}`)
   }
@@ -194,7 +194,7 @@ class ScannerDB extends EventEmitter {
   async lastScan (sourceid) {
     validate('N', arguments)
     return await this.db.value(sql`
-      SELECT lastScan
+      SELECT lastscan
       FROM source
       WHERE sourceid=${sourceid}`)
   }
@@ -214,7 +214,7 @@ class ScannerDB extends EventEmitter {
 
     this.db.readonly(async txn => {
       const meta = await txn.get(sql`
-        SELECT lastSeen, lastScan
+        SELECT lastseen, lastscan
         FROM source
         WHERE sourceid=${sourceid}`)
       meta.SOURCE = true
@@ -264,15 +264,15 @@ class ScannerSource {
   async init () {
     this.sourceid = await db.addSource(this.source)
   }
-  setLastSeen (lastSeen) {
+  setLastSeen (lastseen) {
     validate('N', arguments)
     if (!this.sourceid) return Promise.reject(new Error('setLastSeen called without init()'))
-    return db.setLastSeen(this.sourceid, lastSeen)
+    return db.setLastSeen(this.sourceid, lastseen)
   }
-  setLastScan (lastScan) {
+  setLastScan (lastscan) {
     validate('N', arguments)
     if (!this.sourceid) return Promise.reject(new Error('setLastScan called without init()'))
-    return db.setLastScan(this.sourceid, lastScan)
+    return db.setLastScan(this.sourceid, lastscan)
   }
   replace (fic) {
     validate('O', arguments)
