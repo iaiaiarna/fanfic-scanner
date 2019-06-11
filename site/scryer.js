@@ -39,8 +39,8 @@ class Scryer extends FFNet {
       fic.link = this.linkFromId(fic.siteId)
       const $authorLink = $item.find('a.author-link')
       const author = $authorLink.text().trim()
-      const authorUrl = this.normalizeAuthorLink($authorLink.attr('href'), base)
-      fic.addAuthor(author, authorUrl)
+      const authorUrl = $authorLink.attr('href')
+      fic.addAuthor(author, authorUrl, base)
       const $summary = $item.find('div.story-summary')
       const labels = []
       const $labels = $summary.find('span.label')
