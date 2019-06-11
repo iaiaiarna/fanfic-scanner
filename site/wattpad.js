@@ -49,10 +49,12 @@ class WattPad extends Site {
       fic.tags = fic.tags.concat(story.tags)
       fic.cover = story.cover
       if (story.mature) {
-        fic.tags.push('NSFW')
+        fic.rating = 'Explicit'
       }
       if (story.completed) {
-        fic.tags.push(story.numParts === 1 ? 'status:one-shot' : 'status:complete')
+        fic.status = 'complete'
+      } else {
+        fic.status = 'in-progress'
       }
     }
     return scan
