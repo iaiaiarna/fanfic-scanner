@@ -20,85 +20,80 @@ class AO3 extends Site {
     const scan = new Scan(this, this.normalizeLink(nextPage, base))
 
     const items = []
-    $('li.work[role=article]').each((ii, _) => { items.push($(_)) })
-    $('li.bookmark[role=article]').each((ii, _) => { items.push($(_)) })
+    $('li[role=article]').each((ii, _) => { items.push($(_)) })
 
     for (let $item of items) {
       const fic = scan.addFic()
-      fic.updated = moment($item.find('p.datetime').text(), 'DD MMM YYYY').unix()
-      fic.rawContent = $item.text().trim()
-      const matchId = $item.find('div.header a').first().attr('href')
-        .replace(qr`/collections/[^/]+`, '')
-        .match(/[/](?:works|series)[/](\d+)/)
-      fic.siteId = matchId && matchId[1]
+
+      const $titleLink = $item.find('.header .heading a').first()
+      fic.title = $titleLink.text().trim()
+      const link = $titleLink.attr('href')
+        .replace(qr`/collections/[/]+`, '')
+      const matchId = link.match(qr`(?:works|series)/(\d+)`)
+      fic.siteId = matchId && Number(matchId[1])
       fic.link = this.linkFromId(fic.siteId)
-      fic.title = $item.find('.heading a').first().text().trim()
-      fic.summary = $item.find('.summary').text().trim()
 
-      $item.find('a[rel=author]').each((ii, author) => {
+      const $authorLink = $item.find('.header .heading a[rel="author"]').each((ii, author) => {
         const $author = $(author)
-        fic.addAuthor({
-          name: $author.text().trim().replace(/ [(].*[)]$/, ''),
-          link: this.normalizeAuthorLink($author.attr('href'), base)
-        })
+        // AO3 lists names as Pseudonym (Username).  We don't care about the
+        // latter part (the later merge layer will detect pseudonyms of the
+        // same person and merge them, and we truely don't care about the
+        // username).
+        const name = $author.text().trim().replace(qr` [(](.*)[)]$`, '')
+        const link = $author.attr('href')
+        fic.addAuthor(name, link, base)
       })
-
-      const fandoms = []
       $item.find('.fandoms a.tag').each((ii, fandom) => {
-        fandoms.push($(fandom).text())
+        const fandomName = $(fandom).text()
+        fic.tags.push(`fandom:${fandomName}`)
       })
 
-      fandoms.forEach(f => fic.tags.push(`fandom:${f}`))
+      fic.rating = $item.find('.rating').attr('title').trim()
 
-      const rating = $item.find('ul.required-tags span.rating').attr('title')
-      fic.tags.push('rating:' + rating)
+      // Don't need warnings from here, as they show up in main tags too
+      //const warnings = $item.find('.warnings').attr('title').trim().split(', ')
 
-      const category = $item.find('ul.required-tags span.category').attr('title')
-      if (category) category.split(/,\s*/).forEach(_ => fic.tags.push('category:' + _))
+      const category = $item.find('.category').attr('title').trim()
+      fic.tags.push(`category:${category}`)
 
-      const language = $item.find('dd.language').text()
-      fic.tags.push('language:' + language)
+      const iswip = $item.find('.iswip').attr('title').trim() === 'Work in Progress'
+      const iscomplete = $item.find('.iswip').attr('title').trim() === 'Complete Work'
+      fic.status = iswip ? 'in-progress' : iscomplete ? 'complete' : undefined
 
-      fic.words = Number($item.find('dd.words').text().replace(',', ''))
+      fic.updated = moment.utc($item.find('.header .datetime').text(), 'DD MMM YYYY').unix()
 
-      const [chapterCount, maxChapterCount] = $item.find('dd.chapters').text().split('/').map(n => n === '?' ? n : Number(n))
+      $item.find('.tags li').each((ii, tag) => {
+        const $tag = $(tag)
+        let tagType = $tag.attr('class').replace(/ last/, '').replace(/s$/, '')
+        const tagName = $tag.find('.tag').text().trim()
+        if (tagName === 'Friendship - Relationship') return
+        if (tagName === 'Abandoned Work - Unfinished and Discontinued') {
+          fic.status = 'abandoned'
+          return
+        }
+        if (tagType === 'relationship') {
+          if (/ [&] /.test(tagName)) {
+            tagType = 'friendship'
+          } else {
+            tagType = 'ship'
+          }
+        }
+        fic.tags.push(`${tagType}:${tagName}`) 
+      })
+      const summary = $item.find('.summary').html()
+      if (summary != null) fic.summary = summary.trim()
+      fic.language = $item.find('dd.language').text()
+      fic.words = this.num($item.find('dd.words').text())
+
+      const [chapterCount, maxChapterCount] = $item.find('dd.chapters').text().split('/').map(_ => _ === '?' ? undefined : this.num(_))
       fic.chapterCount = chapterCount
       fic.maxChapterCount = maxChapterCount
 
-      fic.stats.comments = Number($item.find('dd.comments').text().trim().replace(',', ''))
-      fic.stats.kudos = Number($item.find('dd.kudos').text().trim().replace(',', ''))
-      fic.stats.hits = Number($item.find('dd.hits').text().trim().replace(',', ''))
-      fic.stats.bookmarks = Number($item.find('dd.bookmarks').text().trim().replace(',', ''))
-      fic.stats.collections = Number($item.find('dd.collections').text().trim().replace(',', ''))
-
-      $item.find('ul.tags li').each((ii, li) => {
-        const $li = $(li)
-        const kind = $li.attr('class')
-        if (!kind) return
-        let prefix = kind.split(/ /)[0].replace(/s$/, '')
-        const value = $li.text().trim()
-        if (value === 'Friendship - Relationship') return
-        if (prefix === 'relationship') {
-          if (/[/]/.test(value)) {
-            prefix = 'ship'
-          } else {
-            prefix = 'friendship'
-          }
-        }
-        fic.tags.push(`${prefix}:${value}`)
-      })
-      if (fic.tags.includes('freeform:Abandoned Work - Unfinished and Discontinued')) {
-        fic.tags.push('status:abandoned')
-      } else {
-        const iswip = $item.find('ul.required-tags span.iswip').attr('title')
-        if (iswip === 'Complete Work') {
-          if (maxChapterCount === 1) {
-            fic.tags.push('status:one-shot')
-          } else {
-            fic.tags.push('status:complete')
-          }
-        }
-      }
+      fic.stats.comments = this.num($item.find('dd.comments').text())
+      fic.stats.kudos = this.num($item.find('dd.kudos').text().trim())
+      fic.stats.hits = this.num($item.find('dd.hits').text().trim())
+      fic.stats.bookmarks = this.num($item.find('dd.bookmarks').text())
+      fic.stats.collections = this.num($item.find('dd.collections').text())
     }
     return scan
   }

@@ -41,6 +41,12 @@ class Site {
   newFic (obj) {
     return obj ? new Fic(this).fromJSON(obj) : new Fic(this)
   }
+
+  num (n) {
+    if (n == null) return n
+    return Number(String(n).trim().replace(/,/g, ''))
+  }
+
 }
 
 module.exports = Site
