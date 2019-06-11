@@ -228,7 +228,7 @@ class ScannerDB extends EventEmitter {
         FROM fic
         JOIN source_fic USING (ficid)
         WHERE sourceid=${sourceid}
-        ORDER BY updated
+        ORDER BY site, siteid
       `).map(_ => this._rowToFic(_)).pipe(result)
     }).catch(err => result.emit('error', err))
 
