@@ -39,6 +39,9 @@ class WattPad extends Site {
         link: `https://www.wattpad.com/user/${story.user.name}`
       })
       fic.summary = story.description
+        .replace(/</g, '&lt;')
+        .replace(/\n/g, '<br>\n')
+        .replace(/^\s+|\s+$/mg, '')
       fic.chapterCount = story.numParts
       fic.stats.comments = story.commentCount
       fic.stats.kudos = story.voteCount
