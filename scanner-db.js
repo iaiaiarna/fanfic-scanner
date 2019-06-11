@@ -307,16 +307,6 @@ class ScannerSource {
     if (!this.sourceid) return Promise.reject(new Error('lastScan called without init()'))
     return db.lastScan(this.sourceid)
   }
-/* not used
-  delete (fic) {
-    validate('O', arguments)
-    return db.delete(fic)
-  }
-  ficsSince (when) {
-    validate('N', arguments)
-    return db.ficsSince(when)
-  }
-*/
   serialize () {
     if (!this.sourceid) return Promise.reject(new Error('serialize called without init()'))
     return db.serialize(this.sourceid)
