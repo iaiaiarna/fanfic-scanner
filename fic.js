@@ -63,7 +63,7 @@ class Fic {
   }
 
   fromJSON (obj) {
-    this.setSite(obj.db.site)
+    this.setSite(obj.site)
     this.siteId = obj.siteId || obj.siteid
     this.link = obj.link
     this.published = obj.published
