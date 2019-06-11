@@ -163,6 +163,7 @@ class ScannerDB extends EventEmitter {
     })
   }
 
+/*
   async getById (site, siteId) {
     validate('SN', arguments)
     return this._rowToFic(await this.db.get(sql`
@@ -171,6 +172,7 @@ class ScannerDB extends EventEmitter {
       WHERE site=${siteName}
         AND siteid=${siteId}`))
   }
+*/
 
   async getByIds (sourceid, ids) {
     validate('NA', arguments)
@@ -199,6 +201,7 @@ class ScannerDB extends EventEmitter {
       WHERE sourceid=${sourceid}`)
   }
 
+/*
   async delete (fic) {
     validate('O', arguments)
     return await this.db.run(sql`
@@ -207,6 +210,7 @@ class ScannerDB extends EventEmitter {
       WHERE site=${fic.siteName},
             siteid=${fic.siteId}`)
   }
+*/
 
   serialize (sourceid) {
     validate('N', arguments)
