@@ -107,6 +107,7 @@ class XenForo extends Site {
       })
       fic.stats.replies = stats['Replies']
       fic.stats.views = stats['Views']
+      fic.stats.likes = firstPostLikes
       $item.find('.title .prefix').each((ii, prefix) => {
         const $prefix = $(prefix)
         fic.tags.push('section:' + $prefix.text().trim())
