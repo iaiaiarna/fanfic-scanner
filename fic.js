@@ -12,9 +12,12 @@ class Fic {
     this.published = undefined
     this.updated = undefined
     this.title = undefined
+    this.rating = undefined
+    this.language = undefined
 
     this.authors = []
 
+    this.status = undefined
     this.words = undefined
     this.chapterCount = undefined
     this.maxChapterCount = undefined
@@ -77,9 +80,12 @@ class Fic {
     this.published = obj.published
     this.updated = obj.updated
     this.title = obj.title
+    this.rating = obj.rating
+    this.language = obj.language
 
     obj.authors.forEach(_ => this.addAuthor(_.name, _.link))
 
+    this.status = obj.status
     this.words = obj.words
     this.chapterCount = obj.chapterCount
     this.maxChapterCount = obj.maxChapterCount
@@ -102,9 +108,12 @@ class Fic {
       published: this.published,
       updated: this.updated,
       title: this.title,
+      rating: this.rating,
+      language: this.language,
 
       authors: this.authors,
 
+      status: this.status,
       words: this.words,
       chapterCount: this.chapterCount,
       maxChapterCount: this.maxChapterCount,
