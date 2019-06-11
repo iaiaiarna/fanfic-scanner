@@ -94,8 +94,8 @@ class XenForo extends Site {
       fic.link = this.linkFromId(fic.siteId, base)
       const $author = $item.find('a.username').first()
       const author = $author.text()
-      const authorUrl = this.normalizeAuthorLink($author.attr('href'), base)
-      fic.addAuthor(author, authorUrl)
+      const authorUrl = $author.attr('href')
+      fic.addAuthor(author, authorUrl, base)
       const $stats = $item.find('div.stats').first()
       const firstPostLikes = Number(($stats.attr('title') || '').replace('.*: ', ''))
       const stats = {}
