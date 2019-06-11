@@ -10,11 +10,6 @@ class AO3 extends Site {
     super()
     this.name = 'ao3'
   }
-  normalizeAuthorLink (href, base) {
-    if (!href) return
-    return super.normalizeAuthorLink(href, base)
-      .replace(qr`/pseuds/.*`, '/profile')
-  }
   linkFromId (siteId) {
     return `https://archiveofourown.org/works/${siteId}`
   }
