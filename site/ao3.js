@@ -55,8 +55,10 @@ class AO3 extends Site {
       // Don't need warnings from here, as they show up in main tags too
       //const warnings = $item.find('.warnings').attr('title').trim().split(', ')
 
-      const category = $item.find('.category').attr('title').trim()
-      fic.tags.push(`category:${category}`)
+      const category = $item.find('.category').attr('title').trim().split(/, /)
+      for (let cat of category) {
+        fic.tags.push(`category:${cat}`)
+      }
 
       const iswip = $item.find('.iswip').attr('title').trim() === 'Work in Progress'
       const iscomplete = $item.find('.iswip').attr('title').trim() === 'Complete Work'
