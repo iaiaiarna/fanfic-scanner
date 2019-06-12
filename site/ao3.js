@@ -23,13 +23,14 @@ class AO3 extends Site {
     $('ol > li[role=article]').each((ii, _) => { items.push($(_)) })
 
     for (let $item of items) {
-      const fic = scan.addFic()
-
       const $titleLink = $item.find('.header .heading a').first()
-      fic.title = $titleLink.text().trim()
       const link = $titleLink.attr('href')
         .replace(qr`/collections/[/]+`, '')
-      const matchId = link.match(qr`(?:works|series)/(\d+)`)
+      const matchId = link.match(qr`/(?:works|series)/(\d+)`)
+      if (!matchId) continue
+
+      const fic = scan.addFic()
+      fic.title = $titleLink.text().trim()
       fic.siteId = matchId && Number(matchId[1])
       fic.link = this.linkFromId(fic.siteId)
 
