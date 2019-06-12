@@ -20,7 +20,7 @@ class AO3 extends Site {
     const scan = new Scan(this, this.normalizeLink(nextPage, base))
 
     const items = []
-    $('li[role=article]').each((ii, _) => { items.push($(_)) })
+    $('ol > li[role=article]').each((ii, _) => { items.push($(_)) })
 
     for (let $item of items) {
       const fic = scan.addFic()
