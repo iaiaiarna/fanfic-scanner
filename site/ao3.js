@@ -68,7 +68,7 @@ class AO3 extends Site {
         const $tag = $(tag)
         let tagType = ($tag.attr('class') || '').replace(/ last/, '').replace(/s$/, '') || 'bookmark'
         const tagName = $tag.find('.tag').text().trim()
-        if (tagName === 'Friendship - Relationship') return
+          .replace(qr` - ${tagType[0].toUpperCase() + tagType.slice(1)}$`, '')
         if (tagName === 'Abandoned Work - Unfinished and Discontinued') {
           fic.status = 'abandoned'
           return
