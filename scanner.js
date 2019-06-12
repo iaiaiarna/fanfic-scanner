@@ -28,6 +28,7 @@ const status = {
   scanCompleted: null,
   activeScans: {}
 }
+const exiting = false
 
 module.exports = scan
 
@@ -47,9 +48,14 @@ async function scan (userConf) {
   if (conf.flush) await dumpAll(conf)
 
   process.once('SIGINT', () => {
-    console.error("\nSIGINT: Exiting...")
+    console.error('\nSIGINT: Gracefully Exiting...')
     webservice && webservice.stop()
     scanner && scanner.stop()
+    exiting = true
+    process.once('SIGINT', () => {
+      console.error('\nSIGINT: Hard Exiting...')
+      process.exit()
+    })
   })
 
   await Promise.all([
@@ -290,6 +296,7 @@ function inSchedule (now, scan) {
 }
 
 async function runScan (scan, conf) {
+  if (exiting) Promise.reject(new Error('Exiting'))
   const now = unixTime()
   console.log('Scanning', scan.dbfile, 'Starting')
   scan.lastRun = unixTime()
