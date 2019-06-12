@@ -25,7 +25,6 @@ class AO3 extends Site {
     for (let $item of items) {
       const $titleLink = $item.find('.header .heading a').first()
       const link = $titleLink.attr('href')
-        .replace(qr`/collections/[/]+`, '')
       const matchId = link.match(qr`/(?:works|series)/(\d+)`)
       if (!matchId) continue
 
