@@ -43,6 +43,9 @@ class AO3 extends Site {
         // username).
         const name = $author.text().trim().replace(qr` [(](.*)[)]$`, '')
         const link = $author.attr('href')
+        if (this.normalizeAuthorLink(link, base) === 'https://archiveofourown.org/users/orphan_account/profile') {
+          link = null
+        }
         fic.addAuthor(name, link, base)
       })
       $item.find('.fandoms a.tag').each((ii, fandom) => {
