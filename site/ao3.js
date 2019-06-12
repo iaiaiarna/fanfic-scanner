@@ -24,8 +24,7 @@ class AO3 extends Site {
 
     for (let $item of items) {
       // When indexing bookmarks:
-      //  1. We don't currently extract tags added to the bookmark itself
-      //  2. We ignore external bookmarks
+      //  1. We ignore external bookmarks
       const $titleLink = $item.find('.header .heading a').first()
       const link = $titleLink.attr('href')
       const matchId = link.match(qr`/(?:works|series)/(\d+)`)
@@ -65,9 +64,9 @@ class AO3 extends Site {
 
       fic.updated = moment.utc($item.find('.header .datetime').text(), 'DD MMM YYYY').unix()
 
-      $item.find('.tags li').each((ii, tag) => {
+      $item.find('.tags > li').each((ii, tag) => {
         const $tag = $(tag)
-        let tagType = $tag.attr('class').replace(/ last/, '').replace(/s$/, '')
+        let tagType = ($tag.attr('class') || '').replace(/ last/, '').replace(/s$/, '') || 'bookmark'
         const tagName = $tag.find('.tag').text().trim()
         if (tagName === 'Friendship - Relationship') return
         if (tagName === 'Abandoned Work - Unfinished and Discontinued') {
