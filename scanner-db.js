@@ -118,21 +118,14 @@ class ScannerDB extends EventEmitter {
       if (existing) {
         ficid = existing.ficid
         if (existing.updated > existing.scanned || fic.updated >= existing.updated) {
-          await txn.run(sql`
+          this.emit('updated', this._rowToFic(await txn.get(sql`
             UPDATE fic
             SET content=${JSON.stringify(fic)},
                 updated=${fic.updated},
                 scanned=${now},
                 online='active'
-            WHERE ${{ficid}}`)
-          this.emit('updated', {
-            db: {
-              updated: fic.updated,
-              scanned: now,
-              online: 'active',
-            },
-            ...(fic.toJSON ? fic.toJSON() : fic)
-          })
+            WHERE ${{ficid}}
+            RETURING *`)))
         }
         sourceFic = await txn.get(sql`
           SELECT ficid, sourceid
@@ -143,15 +136,11 @@ class ScannerDB extends EventEmitter {
         const added = (fic.db && fic.db.added) || now
         const updated = fic.updated == null ? (fic.db && fic.db.updated) : fic.updated
         const online = (fic.db && fic.db.online) || 'active'
-        ficid = await txn.value(sql`
+        this.emit('updated', this._rowToFic(await txn.get(sql`
           INSERT
           INTO fic (site, siteid, updated, added, scanned, online, content)
           VALUES (${fic.siteName}, ${fic.siteId}, ${updated}, ${added}, ${scanned}, ${online}, ${JSON.stringify(fic)})
-          RETURNING ficid`)
-        this.emit('updated', {
-          db: {updated, added, scanned, online},
-          ...(fic.toJSON ? fic.toJSON() : fic)
-        })
+          RETURNING *`)))
       }
       if (!sourceFic) {
         await txn.run(sql`
