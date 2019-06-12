@@ -49,10 +49,11 @@ class ScannerDB extends EventEmitter {
         updated INTEGER NOT NULL,
         scanned INTEGER NOT NULL,
         added INTEGER NOT NULL,
-        status FIC_STATUS NOT NULL DEFAULT 'active',
+        online FIC_STATUS NOT NULL DEFAULT 'active',
         content JSONB NOT NULL
       );
       CREATE UNIQUE INDEX idx_fic_identity ON fic (site, siteid);
+      CREATE INDEX idx_fic_scanned_order ON fic (scanned DESC, updated DESC);
       CREATE INDEX idx_fic_update_order ON fic (site, siteid, updated DESC);
       CREATE INDEX idx_link ON fic USING GIN ((content->'link'));
       CREATE INDEX idx_published ON fic USING GIN ((content->'published'));
@@ -124,13 +125,13 @@ class ScannerDB extends EventEmitter {
             SET content=${JSON.stringify(fic)},
                 updated=${fic.updated},
                 scanned=${now},
-                status='active'
+                online='active'
             WHERE ${{ficid}}`)
           this.emit('updated', {
             db: {
               updated: fic.updated,
               scanned: now,
-              status: 'active',
+              online: 'active',
             },
             ...(fic.toJSON ? fic.toJSON() : fic)
           })
@@ -142,15 +143,15 @@ class ScannerDB extends EventEmitter {
       } else {
         const scanned = (fic.db && fic.db.scanned) || now
         const added = (fic.db && fic.db.added) || now
-        const updated = fic.updated || (fic.db && fic.db.updated)
-        const status = (fic.db && fic.db.status) || 'active'
+        const updated = fic.updated == null ? (fic.db && fic.db.updated) : fic.updated
+        const online = (fic.db && fic.db.online) || 'active'
         ficid = await txn.value(sql`
           INSERT
-          INTO fic (site, siteid, updated, added, scanned, status, content)
-          VALUES (${fic.siteName}, ${fic.siteId}, ${updated}, ${added}, ${scanned}, ${status}, ${JSON.stringify(fic)})
+          INTO fic (site, siteid, updated, added, scanned, online, content)
+          VALUES (${fic.siteName}, ${fic.siteId}, ${updated}, ${added}, ${scanned}, ${online}, ${JSON.stringify(fic)})
           RETURNING ficid`)
         this.emit('updated', {
-          db: {updated, added, scanned, status},
+          db: {updated, added, scanned, online},
           ...(fic.toJSON ? fic.toJSON() : fic)
         })
       }
@@ -167,7 +168,7 @@ class ScannerDB extends EventEmitter {
   async getById (site, siteId) {
     validate('SN', arguments)
     return this._rowToFic(await this.db.get(sql`
-      SELECT content, updated, added, scanned, status
+      SELECT content, updated, added, scanned, online
       FROM fic
       WHERE site=${siteName}
         AND siteid=${siteId}`))
@@ -178,7 +179,7 @@ class ScannerDB extends EventEmitter {
     validate('NA', arguments)
     if (ids.length === 0) return []
     return (await this.db.all(sql`
-      SELECT content, updated, added, scanned, status
+      SELECT content, updated, added, scanned, online
       FROM fic
       JOIN source_fic USING (ficid)
       WHERE ${{sourceid}} AND siteid IN ${ids}`))
@@ -224,7 +225,7 @@ class ScannerDB extends EventEmitter {
       meta.SOURCE = true
       result.write(meta)
       return txn.iterate(sql`
-        SELECT content, site, updated, added, scanned, status
+        SELECT content, site, updated, added, scanned, online
         FROM fic
         JOIN source_fic USING (ficid)
         WHERE sourceid=${sourceid}
@@ -239,18 +240,18 @@ class ScannerDB extends EventEmitter {
   ficsSince (when) {
     validate('N', arguments)
     return this.db.iterate(sql`
-      SELECT content, site, updated, added, scanned, status
+      SELECT content, site, updated, added, scanned, online
       FROM fic
       WHERE updated >= ${when}
-      ORDER BY updated
+      ORDER BY scanned, updated
       `).map(_ => this._rowToFic(_))
   }
   end () {
     return this.db.end()
   }
   _rowToFic (row) {
-    const {site, updated, added, scanned, status} = row
-    return new Fic(site).fromJSON({db: {updated, added, scanned, status}, ...row.content})
+    const {site, updated, added, scanned, online} = row
+    return new Fic(site).fromJSON({db: {updated, added, scanned, online}, ...row.content})
   }
 }
 
