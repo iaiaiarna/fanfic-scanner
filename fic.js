@@ -48,18 +48,19 @@ class Fic {
 
   addAuthor (name_or_au, link, base) {
     let au
-    if (link) {
+    if (arguments.length > 1) {
       if (this.site) {
         au = this.site.newAuthor(name_or_au, link, base)
       } else {
-        au = {name: name_or_au, link: base ? url.resolve(base, link) : link}
+        au = {name: name_or_au}
+        if (link) au.link = base ? url.resolve(base, link) : link
       }
     } else {
       au = name_or_au
     }
-    if (this.authors.some(_ => _.link === au.link)) return
+    if (this.authors.some(_ => (_.link||_.name) === (au.link||au.name))) return
     this.authors.push(au)
-    this.authors.sort((aa, bb) => aa.name.localeCompare(bb.name) || aa.link.localeCompare(bb.link))
+    this.authors.sort((aa, bb) => aa.name.localeCompare(bb.name) || (aa.link||'').localeCompare(bb.link))
     return au
   }
 

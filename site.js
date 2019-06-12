@@ -7,7 +7,7 @@ class Site {
     this.name = undefined
   }
   normalizeLink (href, base) {
-   if (!href) return href
+    if (!href) return href
 
     // resolve base url
     if (base) href = url.resolve(base, href)
