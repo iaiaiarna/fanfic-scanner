@@ -187,8 +187,8 @@ function loadTOML (file) {
 
 async function loadDatabase (conf) {
   console.log('Opening DB')
-  const existing = (await db.init(conf.dbfile)) && !conf.reset
-  if (conf.reset) await db.reset()
+  const existing = await db.init(conf.dbfile)
+  if (!existing || conf.reset) await db.reset()
   for (let filename of conf.sources) {
     const srcConf = loadTOML(filename)
     for (let source of srcConf.source) {

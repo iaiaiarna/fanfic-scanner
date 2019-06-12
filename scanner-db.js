@@ -12,11 +12,9 @@ class ScannerDB extends EventEmitter {
     super()
     this.db = null
   }
-  async init (dbfile) {
+  init (dbfile) {
     this.db = new PG({connectionString: dbfile})
-    const alreadyExists = await this.exists()
-    if (!alreadyExists) await this.reset()
-    return alreadyExists
+    return this.exists()
   }
 
   async exists () {
