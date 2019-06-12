@@ -23,6 +23,9 @@ class AO3 extends Site {
     $('ol > li[role=article]').each((ii, _) => { items.push($(_)) })
 
     for (let $item of items) {
+      // When indexing bookmarks:
+      //  1. We don't currently extract tags added to the bookmark itself
+      //  2. We ignore external bookmarks
       const $titleLink = $item.find('.header .heading a').first()
       const link = $titleLink.attr('href')
       const matchId = link.match(qr`/(?:works|series)/(\d+)`)
