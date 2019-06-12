@@ -5,7 +5,8 @@ const TOML = require('@iarna/toml')
 const fs = require('fs')
 const path = require('path')
 const fun = require('funstream')
-const ScannerDB = require('./scanner-db.js')
+const ScannerSource = require('./scanner-source.js')
+const db = require('./scanner-db.js')
 const Fic = require('./fic.js')
 const qr = require('@perl/qr')
 const Handlebars = require('handlebars')
@@ -19,7 +20,7 @@ const updateScan = require('./update-scan.js')
 
 const sbTemplate = Handlebars.compile(fs.readFileSync(`${__dirname}/scanner-scoreboard.html`, 'utf8'))
 
-const db = {}
+const sources = {}
 const status = {
   scannerService: false,
   scanRunning: false,
@@ -110,7 +111,6 @@ function startWebService (conf) {
 async function emitSince (ctx, since) {
   ctx.body = fun()
   const start = unixTime()
-  const db = ScannerDB.db
   const queued = []
   const queue = fic => queued.push(fic)
   const forward = fic => {
@@ -181,8 +181,8 @@ function loadTOML (file) {
 
 async function loadDatabase (conf) {
   console.log('Opening DB')
-  const existing = (await ScannerDB.db.init(conf.dbfile || ':memory:')) && !conf.reset
-  if (conf.reset) await ScannerDB.db.reset()
+  const existing = (await db.init(conf.dbfile)) && !conf.reset
+  if (conf.reset) await db.reset()
   for (let filename of conf.sources) {
     const srcConf = loadTOML(filename)
     for (let source of srcConf.source) {
@@ -204,22 +204,21 @@ async function loadDatabase (conf) {
       source.tags = source.tags || srcConf.tags
       source.engine = source.engine || srcConf.engine
       source.schedule = source.schedule || srcConf.schedule
-      db[dbfile] = {
+      sources[dbfile] = {
         filename,
         dbfile,
         conf: source,
         lastRun: null,
-        data: new ScannerDB({...source, name: path.basename(dbfile)})
+        data: await ScannerSource({...source, name: path.basename(dbfile)})
       }
-      await db[dbfile].data.init()
-      if (!existing) await importData(db[dbfile])
-      db[dbfile].lastRun = await db[dbfile].data.lastScan()
+      if (!existing) await importData(sources[dbfile])
+      sources[dbfile].lastRun = await sources[dbfile].data.lastScan()
     }
   }
   console.log('Database online')
 }
 async function closeDatabase () {
-  await ScannerDB.db.end()
+  await db.end()
 }
 
 function startScanner (conf) {
@@ -266,7 +265,7 @@ console.log('importing', scan.dbfile)
 async function runScans (conf) {
   if (status.scanRunning) return
   const now = unixTime()
-  const activeScans = conf.now ? Object.values(db) : Object.values(db).filter(_ => inSchedule(now, _))
+  const activeScans = conf.now ? Object.values(sources) : Object.values(sources).filter(_ => inSchedule(now, _))
   if (activeScans.length === 0) return
   status.scanRunning = true
   status.scanStarted = now
@@ -324,7 +323,7 @@ async function dumpAll (conf) {
   const save = callLimit(saveData, 20)
   console.log('Saving')
   try {
-    await Promise.all(Object.values(db).map(_ => save(_).catch(err => {
+    await Promise.all(Object.values(sources).map(_ => save(_).catch(err => {
       console.error(`Skipping due to error ${_.dbfile}:`, err)
     })))
   } finally {
