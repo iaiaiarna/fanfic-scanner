@@ -67,7 +67,7 @@ class FFNet extends Site {
       }
 
       const matchId = $item.find('a.stitle').attr('href').match(qr`/s/(\d+)`)
-      fic.siteId = matchId && matchId[1]
+      fic.siteId = matchId && Number(matchId[1])
       fic.link = this.linkFromId(fic.siteId)
       fic.title = $item.find('a.stitle').text().trim()
 

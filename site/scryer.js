@@ -41,7 +41,7 @@ class Scryer extends FFNet {
 
       const $storyLink = $item.find('a.story-link')
       fic.title = $storyLink.attr('data-story')
-      fic.siteId = $storyLink.attr('data-story-id')
+      fic.siteId = Number($storyLink.attr('data-story-id'))
       fic.link = this.linkFromId(fic.siteId)
       const $authorLink = $item.find('a.author-link')
       const author = $authorLink.text().trim()
