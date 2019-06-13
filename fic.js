@@ -2,6 +2,11 @@
 const deeplyEquivalent = require('./deeply-equivalent.js')
 const url = require('url')
 
+function num (val) {
+  if (val == null) return val
+  return Number(val)
+}
+
 class Fic {
   constructor (site) {
     this.rawContent = undefined
@@ -81,10 +86,10 @@ class Fic {
 
   fromJSON (obj) {
     this.setSite(obj.site)
-    this.siteId = obj.siteId || obj.siteid
+    this.siteId = num(obj.siteId || obj.siteid)
     this.link = obj.link
-    this.published = obj.published
-    this.updated = obj.updated
+    this.published = num(obj.published)
+    this.updated = num(obj.updated)
     this.title = obj.title
     this.rating = obj.rating
     this.language = obj.language
@@ -92,16 +97,22 @@ class Fic {
     obj.authors.forEach(_ => this.addAuthor(_.name, _.link))
 
     this.status = obj.status
-    this.words = obj.words
-    this.chapterCount = obj.chapterCount
-    this.maxChapterCount = obj.maxChapterCount
+    this.words = num(obj.words)
+    this.chapterCount = num(obj.chapterCount)
+    this.maxChapterCount = num(obj.maxChapterCount)
     this.cover = obj.cover
 
     this.stats = {...obj.stats}
     this.tags = [...obj.tags]
 
     this.summary = obj.summary
-    this.db = {...obj.db}
+    this.db = {
+      ficid: num(obj.db.ficid),
+      updated: num(obj.db.updated),
+      added: num(obj.db.added),
+      scanned: num(obj.db.scanned),
+      online: obj.db.online
+    }
 
     return this
   }
