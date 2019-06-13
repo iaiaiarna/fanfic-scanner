@@ -49,8 +49,11 @@ async function scan (userConf) {
 
   process.once('SIGINT', () => {
     console.error('\nSIGINT: Gracefully Exiting...')
-    webservice && webservice.stop()
-    scanner && scanner.stop()
+    if (scanner) {
+      scanner.stop()
+    } else if (webservice) {
+      webservice.stop()
+    }
     exiting = true
     process.once('SIGINT', () => {
       console.error('\nSIGINT: Hard Exiting...')
