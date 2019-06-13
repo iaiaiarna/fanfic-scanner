@@ -41,7 +41,7 @@ class Fic {
     return this._data.site
   }
   set site (site) {
-    validate('O|S', arguments)
+    validate('O|S|Z', arguments)
     if (typeof site === 'object') {
       this._data.site = site
       this._data.siteName = this.site.name
@@ -79,22 +79,22 @@ class Fic {
     return this._data.link
   }
   set link (href) {
-    validate('S', arguments)
+    validate('Z|S', arguments)
     return this._data.link = href
   }
   get published () {
     return this._data.published
   }
   set published (stamp) {
-    validate('N|S', arguments)
-    return this._data.published = Number(stamp)
+    validate('Z|N|S', arguments)
+    return this._data.published = stamp == null ? stamp : Number(stamp)
   }
   get updated () {
     return this._data.updated
   }
   set updated (stamp) {
-    validate('N|S', arguments)
-    return this._data.updated = Number(stamp)
+    validate('Z|N|S', arguments)
+    return this._data.updated = stamp == null ? stamp : Number(stamp)
   }
   get title () {
     return this._data.title
@@ -108,7 +108,7 @@ class Fic {
     return this._data.rating
   }
   set rating (val) {
-    validate('S', arguments)
+    validate('Z|S', arguments)
     return this._data.rating = val
   }
 
@@ -116,7 +116,7 @@ class Fic {
     return this._data.language
   }
   set language (val) {
-    validate('S', arguments)
+    validate('Z|S', arguments)
     return this._data.language = val
   }
 
@@ -124,39 +124,39 @@ class Fic {
     return this._data.status
   }
   set status (val) {
-    validate('S', arguments)
+    validate('Z|S', arguments)
     return this._data.status = val
   }
 
   get words () {
     return this._data.words
   }
-  set words (stamp) {
-    validate('N|S', arguments)
-    return this._data.words = Number(stamp)
+  set words (val) {
+    validate('Z|N|S', arguments)
+    return this._data.words = val == null ? val : Number(val)
   }
 
   get chapterCount () {
     return this._data.chapterCount
   }
-  set chapterCount (stamp) {
-    validate('N|S', arguments)
-    return this._data.chapterCount = Number(stamp)
+  set chapterCount (val) {
+    validate('Z|N|S', arguments)
+    return this._data.chapterCount = val == null ? val : Number(val)
   }
 
   get maxChapterCount () {
     return this._data.maxChapterCount
   }
-  set maxChapterCount (stamp) {
-    validate('N|S', arguments)
-    return this._data.maxChapterCount = Number(stamp)
+  set maxChapterCount (val) {
+    validate('Z|N|S', arguments)
+    return this._data.maxChapterCount = val == null ? val : Number(val)
   }
 
   get cover () {
     return this._data.cover
   }
   set cover (val) {
-    validate('S', arguments)
+    validate('Z|S', arguments)
     return this._data.cover = val
   }
 
@@ -164,7 +164,7 @@ class Fic {
     return this._data.summary
   }
   set summary (val) {
-    validate('S', arguments)
+    validate('Z|S', arguments)
     return this._data.summary = val
   }
 
