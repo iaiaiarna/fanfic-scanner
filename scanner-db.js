@@ -25,8 +25,19 @@ class ScannerDB extends EventEmitter {
     }
   }
 
+  name () {
+    return 'scanner'
+  }
+
   async reset () {
     let todo = `
+      DROP TABLE IF EXISTS services;
+      CREATE TABLE services (
+        servicename VARCHAR(20) PRIMARY KEY,
+        laststarted INTEGER,
+        lastrecord INTEGER
+      );
+      INSERT INTO services (servicename) VALUES ('${this.name()}');
       DROP TABLE IF EXISTS source_fic;
       DROP TABLE IF EXISTS source;
       DROP TABLE IF EXISTS fic;
@@ -65,6 +76,13 @@ class ScannerDB extends EventEmitter {
     for (let sql of todo) {
       await this.db.run(sql)
     }
+  }
+
+  noteStart (time) {
+    return this.db.run(sql`UPDATE services SET laststarted=${time} WHERE servicename=${this.name()}`)
+  }
+  noteRecord (time) {
+    return this.db.run(sql`UPDATE services SET lastrecord=${time} WHERE servicename=${this.name()}`)
   }
 
   async addSource (source) {

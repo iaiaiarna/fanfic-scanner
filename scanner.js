@@ -237,6 +237,7 @@ function startScanner (conf) {
   const finished = new Promise(resolve => finish = resolve)
   return service({
     async start () {
+      await db.noteStart(unixTime())
       await runScans(conf)
       if (conf.once) {
         finish()
