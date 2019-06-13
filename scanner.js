@@ -220,7 +220,7 @@ async function loadDatabase (conf) {
         lastRun: null,
         data: await ScannerSource({...source, name: path.basename(dbfile)})
       }
-      if (!existing) await importData(sources[dbfile])
+      if (!existing || conf.reset) await importData(sources[dbfile])
       sources[dbfile].lastRun = await sources[dbfile].data.lastScan()
     }
   }
