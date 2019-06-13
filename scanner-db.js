@@ -1,7 +1,6 @@
 'use strict'
 const EventEmitter = require('events')
 const { PG, sql } = require('@iarna/pg')
-const fs = require('fs')
 const fun = require('funstream')
 const unixTime = require('./unix-time.js')
 const Fic = require('./fic.js')
