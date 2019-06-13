@@ -258,8 +258,8 @@ console.log('importing', scan.dbfile)
     for await (let fic of fun(fs.createReadStream(scan.dbfile)).ndjson()) {
       if (fic.SOURCE) {
         await Promise.all([
-          scan.data.setLastSeen(fic.lastseen),
-          scan.data.setLastScan(fic.lastscan)
+          fic.lastseen && scan.data.setLastSeen(fic.lastseen),
+          fic.lastscan && scan.data.setLastScan(fic.lastscan)
         ])
       } else {
         await scan.data.replace(new Fic(scan.engine).fromJSON(fic))
