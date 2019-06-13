@@ -74,6 +74,11 @@ class Fic {
     return deeplyEquivalent(this.toJSON(), other.toJSON())
   }
 
+  contentEqual (other) {
+    if (typeof other !== 'object') return false
+    return deeplyEquivalent(this.toDB(), other.toDB())
+  }
+
   fromJSON (obj) {
     this.setSite(obj.site)
     this.siteId = obj.siteId || obj.siteid
@@ -100,8 +105,8 @@ class Fic {
 
     return this
   }
-      
-  toJSON () {
+
+  toDB () {
     return {
       site: this.siteName,
       siteId: this.siteId,
@@ -123,9 +128,14 @@ class Fic {
       stats: this.stats,
       tags: this.tags,
 
-      summary: this.summary,
-      db: this.db
+      summary: this.summary
     }
+  }
+
+  toJSON () {
+    const json = this.toDB()
+    json.db = this.db
+    return json
   }
 }
 
