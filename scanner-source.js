@@ -1,5 +1,7 @@
 'use strict'
 const db = require('./scanner-db.js')
+const validate = require('aproba')
+const Fic = require('./fic.js')
 
 class ScannerSource {
   constructor (source) {
