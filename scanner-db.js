@@ -146,8 +146,9 @@ class ScannerDB extends EventEmitter {
         this.emit('updated', newFic = this._rowToFic(await txn.get(sql`
           INSERT
           INTO fic (site, siteid, updated, added, scanned, online, content)
-          VALUES (${fic.siteName}, ${fic.siteId}, ${updated}, ${added}, ${scanned}, ${online}, ${JSON.stringify(fic)})
+          VALUES (${fic.siteName}, ${fic.siteId}, ${updated}, ${added}, ${scanned}, ${online}, ${{$$jsonb:fic.toDB()}})
           RETURNING *`)))
+        await this.noteRecord(now)
       }
       if (!sourceFic) {
         await txn.run(sql`
