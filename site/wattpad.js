@@ -29,7 +29,7 @@ class WattPad extends Site {
       // our purposes
       if (!story.lastPublishedPart.createDate) continue
       fic.updated = moment(story.lastPublishedPart.createDate).unix()
-      fic.siteId = Number(story.id)
+      fic.siteId = story.id
       fic.link = this.linkFromId(fic.siteId)
       fic.rawContent = JSON.stringify(story)
 

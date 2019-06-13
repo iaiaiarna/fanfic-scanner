@@ -32,7 +32,7 @@ class AO3 extends Site {
 
       const fic = scan.addFic()
       fic.title = $titleLink.text().trim()
-      fic.siteId = matchId && Number(matchId[1])
+      fic.siteId = matchId && matchId[1]
       fic.link = this.linkFromId(fic.siteId)
 
       const $authorLink = $item.find('.header .heading a[rel="author"]').each((ii, author) => {

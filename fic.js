@@ -1,6 +1,7 @@
 'use strict'
 const deeplyEquivalent = require('./deeply-equivalent.js')
 const url = require('url')
+const validate = require('aproba')
 
 function num (val) {
   if (val == null) return val
@@ -9,46 +10,162 @@ function num (val) {
 
 class Fic {
   constructor (site) {
-    this.rawContent = undefined
+    this._data = {
+      site: undefined,
+      siteName: undefined,
+      siteId: undefined,
+      link: undefined,
+      published: undefined,
+      updated: undefined,
+      title: undefined,
+      rating: undefined,
+      language: undefined,
 
-    this.setSite(site)
-    this.siteId = undefined
-    this.link = undefined
-    this.published = undefined
-    this.updated = undefined
-    this.title = undefined
-    this.rating = undefined
-    this.language = undefined
+      status: undefined,
+      words: undefined,
+      chapterCount: undefined,
+      maxChapterCount: undefined,
+      cover: undefined,
+      summary: undefined,
+    }
+    this.site = site
 
     this.authors = []
-
-    this.status = undefined
-    this.words = undefined
-    this.chapterCount = undefined
-    this.maxChapterCount = undefined
-    this.cover = undefined
-
     this.tags = []
     this.stats = {}
-
-    this.summary = undefined
-
     // db holds some values that are full database fields, used in serialization/deserialization
     this.db = undefined
   }
 
-  setSite (site) {
+  get site () {
+    return this._data.site
+  }
+  set site (site) {
+    validate('O|S', arguments)
     if (typeof site === 'object') {
-      this.site = site
-      this.siteName = this.site.name
+      this._data.site = site
+      this._data.siteName = this.site.name
     } else if (typeof site === 'string') {
       try {
-        this.site = require(`./site/${site}.js`)
-        this.siteName = this.site.name
+        this._data.site = require(`./site/${site}.js`)
+        this._data.siteName = this.site.name
       } catch (_) {
-        this.siteName = site
+        this._data.siteName = site
       }
     }
+    return this._data.site
+  }
+  get siteName () {
+    return this._data.siteName
+  }
+  set siteName (siteName) {
+    validate('S', arguments)
+    try {
+      this._data.site = require(`./site/${siteName}.js`)
+    } catch (_) {
+      // ignore errors
+    } finally {
+      return this._data.siteName = siteName
+    }
+  }
+  get siteId () {
+    return this._data.siteId
+  }
+  set siteId (id) {
+    validate('Z|N|S', arguments)
+    return this._data.siteId = id == null ? id : Number(id)
+  }
+  get link () {
+    return this._data.link
+  }
+  set link (href) {
+    validate('S', arguments)
+    return this._data.link = href
+  }
+  get published () {
+    return this._data.published
+  }
+  set published (stamp) {
+    validate('N|S', arguments)
+    return this._data.published = Number(stamp)
+  }
+  get updated () {
+    return this._data.updated
+  }
+  set updated (stamp) {
+    validate('N|S', arguments)
+    return this._data.updated = Number(stamp)
+  }
+  get title () {
+    return this._data.title
+  }
+  set title (val) {
+    validate('S', arguments)
+    return this._data.title = val
+  }
+
+  get rating () {
+    return this._data.rating
+  }
+  set rating (val) {
+    validate('S', arguments)
+    return this._data.rating = val
+  }
+
+  get language () {
+    return this._data.language
+  }
+  set language (val) {
+    validate('S', arguments)
+    return this._data.language = val
+  }
+
+  get status () {
+    return this._data.status
+  }
+  set status (val) {
+    validate('S', arguments)
+    return this._data.status = val
+  }
+
+  get words () {
+    return this._data.words
+  }
+  set words (stamp) {
+    validate('N|S', arguments)
+    return this._data.words = Number(stamp)
+  }
+
+  get chapterCount () {
+    return this._data.chapterCount
+  }
+  set chapterCount (stamp) {
+    validate('N|S', arguments)
+    return this._data.chapterCount = Number(stamp)
+  }
+
+  get maxChapterCount () {
+    return this._data.maxChapterCount
+  }
+  set maxChapterCount (stamp) {
+    validate('N|S', arguments)
+    return this._data.maxChapterCount = Number(stamp)
+  }
+
+  get cover () {
+    return this._data.cover
+  }
+  set cover (val) {
+    validate('S', arguments)
+    return this._data.cover = val
+  }
+
+  get summary () {
+    return this._data.summary
+  }
+  set summary (val) {
+    validate('S', arguments)
+    return this._data.summary = val
   }
 
   addAuthor (name_or_au, link, base) {
@@ -85,7 +202,7 @@ class Fic {
   }
 
   fromJSON (obj) {
-    this.setSite(obj.site)
+    this.siteName = obj.site
     this.siteId = num(obj.siteId || obj.siteid)
     this.link = obj.link
     this.published = num(obj.published)

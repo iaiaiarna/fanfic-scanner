@@ -90,7 +90,7 @@ class XenForo extends Site {
       const idMatch = rawLink && this.normalizeFicLink(rawLink, base)
         .replace(/[/]unread/, '')
         .match(/[/]threads[/](?:.*?[.])?(\d+)/)
-      fic.siteId = idMatch && Number(idMatch[1])
+      fic.siteId = idMatch && idMatch[1]
       fic.link = this.linkFromId(fic.siteId, base)
       const $author = $item.find('a.username').first()
       const author = $author.text()
