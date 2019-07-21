@@ -18,7 +18,7 @@ class ScannerDB extends EventEmitter {
 
   async exists () {
     try {
-      await this.db.run('SELECT sourceid FROM source LIMIT 1')
+      await this.db.run('SELECT servicename FROM services LIMIT 1')
       return true
     } catch (err) {
       return false
