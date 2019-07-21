@@ -31,7 +31,6 @@ class WattPad extends Site {
       fic.updated = moment(story.lastPublishedPart.createDate).unix()
       fic.siteId = story.id
       fic.link = this.linkFromId(fic.siteId)
-      fic.rawContent = JSON.stringify(story)
 
       fic.title = story.title.trim()
       fic.addAuthor({
