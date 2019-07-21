@@ -79,9 +79,11 @@ class ScannerDB extends EventEmitter {
   }
 
   noteStart (time) {
+    validate('N', arguments)
     return this.db.run(sql`UPDATE services SET laststarted=${time} WHERE servicename=${this.name()}`)
   }
   noteRecord (time) {
+    validate('N', arguments)
     return this.db.run(sql`UPDATE services SET lastrecord=${time} WHERE servicename=${this.name()}`)
   }
 
