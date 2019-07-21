@@ -187,7 +187,7 @@ class Fic {
   }
 
   tagMatch (filterTags) {
-    if (!filterTags) return true // if there is no tag filter then its always a match
+    if (!filterTags) return true
     return this.tags.some(_ => filterTags.test(_))
   }
 
