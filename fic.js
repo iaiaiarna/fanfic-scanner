@@ -238,7 +238,7 @@ class Fic {
 
     this.summary = obj.summary
     this.db = {
-      ficid: num(obj.db.ficid),
+      id: num(obj.db.id),
       updated: num(obj.db.updated),
       added: num(obj.db.added),
       scanned: num(obj.db.scanned),

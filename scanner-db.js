@@ -38,9 +38,9 @@ class ScannerDB extends EventEmitter {
         lastrecord INTEGER
       );
       INSERT INTO services (servicename) VALUES ('${this.name()}');
-      DROP TABLE IF EXISTS source_fic;
+      DROP TABLE IF EXISTS source_sitefic;
       DROP TABLE IF EXISTS source;
-      DROP TABLE IF EXISTS fic;
+      DROP TABLE IF EXISTS sitefic;
       DROP TYPE IF EXISTS FIC_STATUS;
       CREATE TYPE FIC_STATUS AS ENUM ('active', 'deleted');
       CREATE TABLE source (
@@ -50,8 +50,8 @@ class ScannerDB extends EventEmitter {
         lastseen INTEGER,
         lastscan INTEGER
       );
-      CREATE TABLE fic (
-        ficid SERIAL PRIMARY KEY,
+      CREATE TABLE sitefic (
+        siteficid SERIAL PRIMARY KEY,
         site VARCHAR(40) NOT NULL,
         siteid INTEGER NOT NULL,
         updated INTEGER NOT NULL,
@@ -60,17 +60,17 @@ class ScannerDB extends EventEmitter {
         online FIC_STATUS NOT NULL DEFAULT 'active',
         content JSONB NOT NULL
       );
-      CREATE UNIQUE INDEX idx_fic_identity ON fic (site, siteid);
-      CREATE INDEX idx_fic_scanned_order ON fic (scanned DESC, updated DESC);
-      CREATE INDEX idx_fic_update_order ON fic (site, siteid, updated DESC);
-      CREATE INDEX idx_link ON fic USING GIN ((content->'link'));
-      CREATE INDEX idx_published ON fic USING GIN ((content->'published'));
-      CREATE TABLE source_fic (
+      CREATE UNIQUE INDEX idx_sitefic_identity ON sitefic (site, siteid);
+      CREATE INDEX idx_sitefic_scanned_order ON sitefic (scanned DESC, updated DESC);
+      CREATE INDEX idx_sitefic_update_order ON sitefic (site, siteid, updated DESC);
+      CREATE INDEX idx_link ON sitefic USING GIN ((content->'link'));
+      CREATE INDEX idx_published ON sitefic USING GIN ((content->'published'));
+      CREATE TABLE source_sitefic (
         sourceid SERIAL,
-        ficid SERIAL,
+        siteficid SERIAL,
         FOREIGN KEY(sourceid) REFERENCES source(sourceid) ON DELETE CASCADE,
-        FOREIGN KEY(ficid) REFERENCES fic(ficid) ON DELETE CASCADE,
-        PRIMARY KEY (sourceid, ficid)
+        FOREIGN KEY(siteficid) REFERENCES sitefic(siteficid) ON DELETE CASCADE,
+        PRIMARY KEY (sourceid, siteficid)
       );
     `.split(';').map(_ => _.trim())
     for (let sql of todo) {
@@ -144,18 +144,18 @@ class ScannerDB extends EventEmitter {
             toUpdate.scanned = fic.scanned
           }
           this.emit('updated', newFic = this._rowToFic(await txn.get(sql`
-            UPDATE fic
+            UPDATE sitefic
             SET ${toUpdate}
-            WHERE ficid=${existing.db.ficid}
+            WHERE siteficid=${existing.db.id}
             RETURNING *`)))
           await this.noteRecord(now)
         } else {
           newFic = existing
         }
         sourceFic = await txn.get(sql`
-          SELECT ficid, sourceid
-          FROM source_fic
-          WHERE ficid=${existing.db.ficid} AND sourceid=${sourceid}`)
+          SELECT siteficid, sourceid
+          FROM source_sitefic
+          WHERE siteficid=${existing.db.id} AND sourceid=${sourceid}`)
       } else {
         const scanned = (fic.db && fic.db.scanned) || now
         const added = (fic.db && fic.db.added) || now
@@ -163,7 +163,7 @@ class ScannerDB extends EventEmitter {
         const online = (fic.db && fic.db.online) || 'active'
         this.emit('updated', newFic = this._rowToFic(await txn.get(sql`
           INSERT
-          INTO fic (site, siteid, updated, added, scanned, online, content)
+          INTO sitefic (site, siteid, updated, added, scanned, online, content)
           VALUES (${fic.siteName}, ${fic.siteId}, ${updated}, ${added}, ${scanned}, ${online}, ${{$$jsonb:fic.toDB()}})
           RETURNING *`)))
         await this.noteRecord(now)
@@ -171,8 +171,8 @@ class ScannerDB extends EventEmitter {
       if (!sourceFic) {
         await txn.run(sql`
           INSERT
-          INTO source_fic (sourceid, ficid)
-          VALUES (${sourceid}, ${newFic.db.ficid})`)
+          INTO source_sitefic (sourceid, siteficid)
+          VALUES (${sourceid}, ${newFic.db.id})`)
       }
     })
   }
@@ -180,8 +180,8 @@ class ScannerDB extends EventEmitter {
   async getById (siteName, siteId) {
     validate('SN', arguments)
     return this._rowToFic(await this.db.get(sql`
-      SELECT fic.*
-      FROM fic
+      SELECT sitefic.*
+      FROM sitefic
       WHERE site=${siteName}
         AND siteid=${siteId}`))
   }
@@ -190,9 +190,9 @@ class ScannerDB extends EventEmitter {
     validate('NA', arguments)
     if (ids.length === 0) return []
     return (await this.db.all(sql`
-      SELECT fic.*, source_fic.sourceid
-      FROM fic
-      JOIN source_fic USING (ficid)
+      SELECT sitefic.*, source_sitefic.sourceid
+      FROM sitefic
+      JOIN source_sitefic USING (siteficid)
       WHERE ${{sourceid}} AND siteid IN ${ids}`))
      .map(_ => this._rowToFic(_))
   }
@@ -218,7 +218,7 @@ class ScannerDB extends EventEmitter {
     validate('O', arguments)
     return await this.db.run(sql`
       DELETE
-      FROM fic
+      FROM sitefic
       WHERE site=${fic.siteName},
             siteid=${fic.siteId}`)
   }
@@ -236,9 +236,9 @@ class ScannerDB extends EventEmitter {
       meta.SOURCE = true
       result.write(meta)
       return txn.iterate(sql`
-        SELECT fic.*
-        FROM fic
-        JOIN source_fic USING (ficid)
+        SELECT sitefic.*
+        FROM sitefic
+        JOIN source_sitefic USING (siteficid)
         WHERE sourceid=${sourceid}
         ORDER BY site, siteid
       `).map(_ => this._rowToFic(_)).pipe(result)
@@ -251,8 +251,8 @@ class ScannerDB extends EventEmitter {
   ficsSince (when) {
     validate('N', arguments)
     return this.db.iterate(sql`
-      SELECT fic.*
-      FROM fic
+      SELECT sitefic.*
+      FROM sitefic
       WHERE updated >= ${when}
       ORDER BY scanned, updated
       `).map(_ => this._rowToFic(_))
@@ -262,11 +262,11 @@ class ScannerDB extends EventEmitter {
   }
   _rowToFic (row) {
     if (!row) return row
-    const {content, site, ficid, updated, added, scanned, online} = row
+    const {content, site, siteficid, updated, added, scanned, online} = row
     // can't use camelcase in postgres, cause field names are case
     // insensitive and not case preserving
     content.siteId = content.siteid
-    return new Fic(site).fromJSON({db: {ficid, updated, added, scanned, online}, ...content})
+    return new Fic(site).fromJSON({db: {id: siteficid, updated, added, scanned, online}, ...content})
   }
 }
 
