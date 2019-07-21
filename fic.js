@@ -33,7 +33,6 @@ class Fic {
     this.authors = []
     this.tags = []
     this.stats = {}
-    // db holds some values that are full database fields, used in serialization/deserialization
     this.db = undefined
   }
 
@@ -210,11 +209,6 @@ class Fic {
     return deeplyEquivalent(this.toJSON(), other.toJSON())
   }
 
-  contentEqual (other) {
-    if (typeof other !== 'object') return false
-    return deeplyEquivalent(this.toDB(), other.toDB())
-  }
-
   fromJSON (obj) {
     this.siteName = obj.site
     this.siteId = num(obj.siteId)
@@ -237,18 +231,12 @@ class Fic {
     this.tags = [...obj.tags]
 
     this.summary = obj.summary
-    this.db = {
-      id: num(obj.db.id),
-      updated: num(obj.db.updated),
-      added: num(obj.db.added),
-      scanned: num(obj.db.scanned),
-      online: obj.db.online
-    }
+    this.db = obj.db ? {...obj.db} : undefined
 
     return this
   }
 
-  toDB () {
+  toJSON () {
     return {
       site: this.siteName,
       siteId: this.siteId,
@@ -270,14 +258,10 @@ class Fic {
       stats: this.stats,
       tags: this.tags,
 
-      summary: this.summary
-    }
-  }
+      summary: this.summary,
 
-  toJSON () {
-    const json = this.toDB()
-    json.db = this.db
-    return json
+      db: this.db
+    }
   }
 }
 

@@ -5,6 +5,7 @@ const fun = require('funstream')
 const unixTime = require('./unix-time.js')
 const Fic = require('./fic.js')
 const validate = require('aproba')
+const deeplyEquivalent = require('./deeply-equivalent.js')
 
 class ScannerDB extends EventEmitter {
   constructor () {
@@ -124,6 +125,18 @@ class ScannerDB extends EventEmitter {
       UPDATE source SET ${{lastscan}} WHERE sourceid=${sourceid}`)
   }
 
+  ficToDB (fic) {
+    const json = fic.toJSON()
+    delete json.db
+    return json
+  }
+
+  ficContentEqual (ficA, ficB) {
+    if (typeof ficA !== 'object') return false
+    if (typeof ficB !== 'object') return false
+    return deeplyEquivalent(this.ficToDB(ficA), this.ficToDB(ficB))
+  }
+
   async replace (sourceid, fic) {
     validate('NO', arguments)
     return await this.db.serial(async txn => {
@@ -136,8 +149,8 @@ class ScannerDB extends EventEmitter {
           const toUpdate = {
             online: 'active'
           }
-          if (!fic.contentEqual(existing)) {
-            toUpdate.content = fic.toDB()
+          if (!this.ficContentEqual(fic, existing)) {
+            toUpdate.content = this.ficToDB(fic)
           }
           if (fic.updated >= existing.updated) {
             toUpdate.updated = fic.updated
@@ -166,7 +179,7 @@ class ScannerDB extends EventEmitter {
         this.emit('updated', newFic = this._rowToFic(await txn.get(sql`
           INSERT
           INTO sitefic (site, siteid, updated, added, scanned, online, content)
-          VALUES (${fic.siteName}, ${fic.siteId}, ${updated}, ${added}, ${scanned}, ${online}, ${{$$jsonb:fic.toDB()}})
+          VALUES (${fic.siteName}, ${fic.siteId}, ${updated}, ${added}, ${scanned}, ${online}, ${{$$jsonb:this.ficToDB(fic)}})
           RETURNING *`)))
         await this.noteRecord(now)
       }
