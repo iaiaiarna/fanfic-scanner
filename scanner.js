@@ -157,9 +157,9 @@ async function emitSince (ctx, since) {
           || await ctx.body.fun.writable()
       }
       db.removeListener('updated', queue)
-      console.error('flushing queue', cnt, qcnt)
+      console.error('updated', 'finished queue flush', qcnt)
     }
-    console.error('setting up final forward')
+    console.error('updated', 'forward all further entries live')
     db.on('updated', forward)
   })
 }
