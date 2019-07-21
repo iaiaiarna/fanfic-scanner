@@ -49,4 +49,37 @@ class Site {
 
 }
 
+function parseURL (href) {
+  try {
+    return url.parse(href)
+  } catch (_) {
+    return
+  }
+}
+
+Site.create = function SiteCreate (engine, href) {
+  if (engine == null || engine === 'auto') {
+    const link = parseURL(href)
+    if (link) {
+      if (link.hostname.includes('archiveofourown.org')) {
+        return require('./site/ao3.js')
+      } else if (link.hostname.includes('fanfiction.net')) {
+        return require('./site/ffnet.js')
+      } else if (link.hostname.includes('reddit.com')) {
+        return require('./site/reddit.js')
+      } else if (link.hostname.includes('scryer.darklordpotter.net')) {
+        return require('./site/scryer.js')
+      } else if (link.hostname.includes('wattpad.com')) {
+        return require('./site/wattpad.js')
+      // xenforo checks are necessarily weak and must be last
+      } else if (link.pathname.incldues('/forums/') || link.pathname.incldues('/tags/')) {
+        return require('./site/xen.js')
+      }
+    }
+    throw new Error('Could not determine site from: ' + href)
+  } else {
+    return require(`./site/${engine}.js`)
+  }
+}
+
 module.exports = Site

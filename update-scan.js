@@ -2,9 +2,10 @@
 module.exports = updateScan
 
 const url = require('url')
+const Site = require('./site.js')
 
 async function updateScan (fetch, activeScan) {
-  const site = require(`./site/${activeScan.conf.engine}.js`)
+  const site = Site.create(activeScan.conf.engine, activeScan.conf.link)
 
   let lastSeen = await activeScan.data.lastSeen() || 0
   let nextPage = activeScan.conf.link
