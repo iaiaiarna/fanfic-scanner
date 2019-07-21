@@ -191,6 +191,20 @@ class Fic {
     return this.tags.some(_ => filterTags.test(_))
   }
 
+  entryMatch (filterEntry) {
+    if (!filterEntry) return true
+    // filterEntry acts on ALL of the info we have, collectively.
+    // originally it matched against "rawContent" which was a site specific
+    // textual rendering of the entire fic page.
+    // Using a more normalized form let's us only carry around data
+    // that we'll store. It also makes the matching more predicatable.
+    const content =
+      'Tags: ' + this.tags.join(', ') + '\n' +
+      'Title: ' + this.title + '\n' +
+      'Summary: ' + this.summary
+    return filterEntry.test(content)
+  }
+
   equal (other) {
     if (typeof other !== 'object') return false
     return deeplyEquivalent(this.toJSON(), other.toJSON())

@@ -35,21 +35,19 @@ async function updateScan (fetch, activeScan) {
       if (updated > lastSeen) {
         lastSeen = updated
       }
-      if (activeScan.conf.filterEntry && !activeScan.conf.filterEntry.test(fic.rawContent)) continue
-
       if (!fic.siteId) {
         //console.error('Skipping, no id', fic.link)
         continue
       }
+
       const existing = existingItems[fic.siteId]
 
       // no changes, skip
       if (fic.equal(existing)) continue
 
-      // Tag matching ALSO looks at the title, due to sites that put tags in the title
       const tagMatch = fic.tagMatch(activeScan.conf.filterTags)
-
-      if (existing || tagMatch) {
+      const entryMatch = fic.entryMatch(activeScan.conf.filterEntry)
+      if (existing || tagMatch || entryMatch) {
         await activeScan.data.replace(fic)
       }
     }
