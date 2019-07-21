@@ -263,6 +263,9 @@ class ScannerDB extends EventEmitter {
   _rowToFic (row) {
     if (!row) return row
     const {content, site, ficid, updated, added, scanned, online} = row
+    // can't use camelcase in postgres, cause field names are case
+    // insensitive and not case preserving
+    content.siteId = content.siteid
     return new Fic(site).fromJSON({db: {ficid, updated, added, scanned, online}, ...content})
   }
 }

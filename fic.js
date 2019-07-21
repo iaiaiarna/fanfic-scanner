@@ -203,7 +203,7 @@ class Fic {
 
   fromJSON (obj) {
     this.siteName = obj.site
-    this.siteId = num(obj.siteId || obj.siteid)
+    this.siteId = num(obj.siteId)
     this.link = obj.link
     this.published = num(obj.published)
     this.updated = num(obj.updated)
