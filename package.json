@@ -7,7 +7,7 @@
   "dependencies": {
     "@fanfic/parser": "^1.0.0",
     "@iarna/cli": "^2.0.2",
-    "@iarna/pg": "^1.0.2",
+    "@iarna/pg": "^1.1.2",
     "@iarna/toml": "^2.2.3",
     "@perl/qr": "^1.2.0",
     "aproba": "^2.0.0",
