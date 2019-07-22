@@ -3,7 +3,7 @@ const EventEmitter = require('events')
 const { PG, sql } = require('@iarna/pg')
 const fun = require('funstream')
 const unixTime = require('./unix-time.js')
-const Fic = require('./fic.js')
+const { Fic } = require('@fanfic/parser')
 const validate = require('aproba')
 const deeplyEquivalent = require('./deeply-equivalent.js')
 

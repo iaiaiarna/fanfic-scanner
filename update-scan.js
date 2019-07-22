@@ -2,10 +2,17 @@
 module.exports = updateScan
 
 const url = require('url')
-const Site = require('./site.js')
+const { Site } = require('@fanfic/parser')
+const deeplyEquivalent = require('./deeply-equivalent.js')
+
+function ficEqual (ficA, ficB) {
+  if (typeof ficA !== 'object') return false
+  if (typeof ficB !== 'object') return false
+  return deeplyEquivalent(ficA.toJSON(), ficB.toJSON())
+}
 
 async function updateScan (fetch, activeScan) {
-  const site = Site.create(activeScan.conf.engine, activeScan.conf.link)
+  const site = Site.create(activeScan.conf.engine || activeScan.conf.link)
 
   let lastSeen = await activeScan.data.lastSeen() || 0
   let nextPage = activeScan.conf.link
@@ -43,7 +50,7 @@ async function updateScan (fetch, activeScan) {
       const existing = existingItems[fic.siteId]
 
       // no changes, skip
-      if (fic.equal(existing)) continue
+      if (ficEqual(fic, existing)) continue
 
       const tagMatch = fic.tagMatch(activeScan.conf.filterTags)
       const entryMatch = fic.entryMatch(activeScan.conf.filterEntry)
